@@ -1,28 +1,49 @@
 "use client";
 
-import { supabase } from '../../lib/supabase';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { supabase } from "../../lib/supabase";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
 
     if (error) {
-      alert('Giriş başarısız: ' + error.message);
+      alert("Giriş başarısız: " + error.message);
     }
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (session) {
-        router.push('/dashboard');
+        router.replace("/dashboard");
       }
-    });
+    };
+
+    checkSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          router.replace("/dashboard");
+        }
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   return (
