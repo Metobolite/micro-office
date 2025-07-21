@@ -32,7 +32,7 @@ export default function TasksPageClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
-  // Görevleri Supabase'den çek
+  // Görevleri supabase'den çek
   const fetchTasks = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -212,7 +212,6 @@ export default function TasksPageClient({
                 key={status}
                 className="flex flex-col bg-[#456882] p-4 rounded-md min-h-[300px]"
               >
-                {/* Başlığı buraya aldık, droppable'ın dışına */}
                 <h2 className="font-bold text-xl mb-4 capitalize pointer-events-none z-10 sticky top-0 bg-[#456882]">
                   {status.replace("_", " ")}
                 </h2>

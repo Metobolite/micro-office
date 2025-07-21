@@ -19,8 +19,15 @@ export default function DashboardPage() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    const res = await fetch("/auth/logout", {
+      method: "POST",
+    });
+
+    if (res.redirected) {
+      router.push(res.url);
+    } else {
+      router.push("/auth/login");
+    }
   };
 
   return (
