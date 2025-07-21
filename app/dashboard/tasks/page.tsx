@@ -17,6 +17,16 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Düzenleme için state
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  // Silme onay modalı için state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  // Görevleri Supabase'den çek
   const fetchTasks = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -37,6 +47,68 @@ export default function TasksPage() {
     fetchTasks();
   }, []);
 
+  // Görev silme fonksiyonu
+  const deleteTask = async (taskId: string) => {
+    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+    if (error) {
+      alert("Görev silinirken hata oluştu: " + error.message);
+    } else {
+      setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    }
+  };
+
+  // Silme onayla
+  const confirmDelete = () => {
+    if (!taskToDelete) return;
+    deleteTask(taskToDelete.id);
+    setShowDeleteConfirm(false);
+    setTaskToDelete(null);
+  };
+
+  // Silmeyi iptal et
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setTaskToDelete(null);
+  };
+
+  // Düzenlemeye başla
+  const startEdit = (task: Task) => {
+    setEditingTask(task);
+    setEditTitle(task.title);
+    setEditDescription(task.description);
+  };
+
+  // Düzenlemeyi iptal et
+  const cancelEdit = () => {
+    setEditingTask(null);
+    setEditTitle("");
+    setEditDescription("");
+  };
+
+  // Düzenlemeyi kaydet
+  const saveEdit = async () => {
+    if (!editingTask) return;
+
+    const { error } = await supabase
+      .from("tasks")
+      .update({ title: editTitle, description: editDescription })
+      .eq("id", editingTask.id);
+
+    if (error) {
+      alert("Görev güncellenirken hata oluştu: " + error.message);
+    } else {
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === editingTask.id
+            ? { ...task, title: editTitle, description: editDescription }
+            : task
+        )
+      );
+      cancelEdit();
+    }
+  };
+
+  // Sürükle-bırak sonrası sıralama ve durum güncellemesi
   const handleDragEnd = async (result: any) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -52,7 +124,7 @@ export default function TasksPage() {
       const [moved] = tasksInColumn.splice(source.index, 1);
       tasksInColumn.splice(destination.index, 0, moved);
 
-      const updated = tasks.map((t) =>
+      const updatedTasks = tasks.map((t) =>
         t.status !== sourceStatus
           ? t
           : {
@@ -61,7 +133,7 @@ export default function TasksPage() {
             }
       );
 
-      setTasks(updated);
+      setTasks(updatedTasks);
 
       for (const task of tasksInColumn) {
         await supabase
@@ -123,50 +195,136 @@ export default function TasksPage() {
       .sort((a, b) => a.sort_order - b.sort_order);
 
   return (
-    <div className="p-6 bg-[#1B3C53] min-h-screen text-white">
-      <AddTaskForm onTaskAdded={fetchTasks} />
+    <>
+      <div className="p-6 bg-[#1B3C53] min-h-screen text-white">
+        <AddTaskForm onTaskAdded={fetchTasks} />
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          {["todo", "in_progress", "done"].map((status) => (
-            <Droppable droppableId={status} key={status}>
-              {(provided) => (
-                <div className="bg-[#456882] p-4 rounded-md min-h-[300px] flex flex-col">
-                  <h2 className="font-bold text-xl mb-4 capitalize pointer-events-none">
-                    {status.replace("_", " ")}
-                  </h2>
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="flex-1 min-h-[100px]"
-                  >
-                    {getTasksByStatus(status).map((task, index) => (
-                      <Draggable
-                        key={task.id}
-                        draggableId={task.id}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="bg-[#F9F3EF] text-[#1B3C53] p-4 mb-3 rounded shadow"
-                          >
-                            <h3 className="font-semibold">{task.title}</h3>
-                            <p className="text-sm">{task.description}</p>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                </div>
-              )}
-            </Droppable>
-          ))}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            {["todo", "in_progress", "done"].map((status) => (
+              <div
+                key={status}
+                className="flex flex-col bg-[#456882] p-4 rounded-md min-h-[300px]"
+              >
+                {/* Başlığı buraya aldık, droppable'ın dışına */}
+                <h2 className="font-bold text-xl mb-4 capitalize pointer-events-none z-10 sticky top-0 bg-[#456882]">
+                  {status.replace("_", " ")}
+                </h2>
+                <Droppable droppableId={status}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="flex-1 min-h-[100px]"
+                    >
+                      {getTasksByStatus(status).map((task, index) => (
+                        <Draggable
+                          key={task.id}
+                          draggableId={task.id}
+                          index={index}
+                        >
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-[#F9F3EF] text-[#1B3C53] p-4 mb-3 rounded shadow relative"
+                            >
+                              {editingTask?.id === task.id ? (
+                                <>
+                                  <input
+                                    className="w-full mb-2 p-1 border border-gray-300 rounded"
+                                    value={editTitle}
+                                    onChange={(e) =>
+                                      setEditTitle(e.target.value)
+                                    }
+                                  />
+                                  <textarea
+                                    className="w-full mb-2 p-1 border border-gray-300 rounded"
+                                    value={editDescription}
+                                    onChange={(e) =>
+                                      setEditDescription(e.target.value)
+                                    }
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      onClick={saveEdit}
+                                      className="bg-green-600 px-3 py-1 rounded text-white"
+                                    >
+                                      Kaydet
+                                    </button>
+                                    <button
+                                      onClick={cancelEdit}
+                                      className="bg-gray-400 px-3 py-1 rounded"
+                                    >
+                                      İptal
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <h3 className="font-semibold">
+                                    {task.title}
+                                  </h3>
+                                  <p className="text-sm">{task.description}</p>
+                                  <div className="absolute top-2 right-2 flex gap-1">
+                                    <button
+                                      onClick={() => startEdit(task)}
+                                      className="bg-[#09122C] px-2 py-1 rounded text-xs text-[#d5cbc4] font-semibold hover:bg-[#2b344d] transition duration-300"
+                                      title="Düzenle"
+                                    >
+                                      Düzenle
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setTaskToDelete(task);
+                                        setShowDeleteConfirm(true);
+                                      }}
+                                      className="bg-[#BE3144] text-[#d5cbc4] px-2 py-1 rounded text-xs font-semibold hover:bg-[#DC2525] transition duration-300"
+                                      title="Sil"
+                                    >
+                                      Sil
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      </div>
+
+      {showDeleteConfirm && taskToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center bg-[#00000070] z-50">
+          <div className="bg-white p-6 rounded shadow max-w-sm w-full text-black modal-overlay">
+            <h3 className="text-xl font-semibold mb-4">
+              "{taskToDelete.title}" görevini silmek istediğinize emin misiniz?
+            </h3>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={confirmDelete}
+                className="bg-[#BE3144] text-[#ebe7e5] px-4 py-2 rounded text-sm font-semibold hover:bg-[#DC2525] transition duration-300"
+              >
+                Evet, Sil
+              </button>
+              <button
+                onClick={cancelDelete}
+                className="bg-[#1B3C53] px-4 py-2 rounded text-sm font-semibold text-[#ebe7e5] hover:bg-[#34699A] transition duration-300"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
         </div>
-      </DragDropContext>
-    </div>
+      )}
+    </>
   );
 }
