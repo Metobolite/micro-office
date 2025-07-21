@@ -43,6 +43,12 @@ export default function DashboardPage() {
           >
             Görevlere Git
           </button>
+          <button
+            onClick={() => router.push("/dashboard/chat")}
+            className="mt-6 bg-[#D2C1B6] text-black font-bold px-4 py-2 rounded hover:bg-[#e9d6ca] transform duration-300"
+          >
+            Chat'e Git
+          </button>
         </div>
       </div>
     </div>
