@@ -38,6 +38,7 @@ export default function TasksPageClient({
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
+      .eq("user_id", userId)
       .order("status", { ascending: true })
       .order("sort_order", { ascending: true });
 
@@ -203,7 +204,7 @@ export default function TasksPageClient({
   return (
     <>
       <div className="p-6 bg-[#1B3C53] min-h-screen text-white">
-        <AddTaskForm onTaskAdded={fetchTasks} />
+        <AddTaskForm onTaskAdded={fetchTasks} userId={userId} />
 
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">

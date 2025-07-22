@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import { useRouter } from "next/navigation";
 
 export default function DashboardPage() {
-  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -13,7 +13,7 @@ export default function DashboardPage() {
       if (error || !data?.user) {
         router.push("/auth/login");
       } else {
-        setUserEmail(data.user.email ?? "");
+        setUserName(data.user.user_metadata.full_name ?? "");
       }
     });
   }, []);
@@ -35,7 +35,7 @@ export default function DashboardPage() {
       <div className="max-w-xl mx-auto bg-[#456882] shadow-lg p-6 rounded-lg">
         <h1 className="text-2xl text-white font-bold mb-4">Dashboard</h1>
         <p className="text-white mb-4">
-          Hoş geldin: <strong>{userEmail}</strong>
+          Hoş geldin: <strong>{userName}</strong>
         </p>
         <div className="flex justify-between">
           <button

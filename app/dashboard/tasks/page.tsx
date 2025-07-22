@@ -1,5 +1,3 @@
-import { cookies } from "next/headers";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { redirect } from "next/navigation";
 import TasksPageClient from "../../components/TasksPageClient";
 import { createClient } from "../../lib/supabaseServer";

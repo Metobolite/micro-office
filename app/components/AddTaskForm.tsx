@@ -4,8 +4,10 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function AddTaskForm({
+  userId,
   onTaskAdded,
 }: {
+  userId: string;
   onTaskAdded: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -18,6 +20,7 @@ export default function AddTaskForm({
 
     const { error } = await supabase.from("tasks").insert([
       {
+        user_id: userId,
         title,
         description,
         status: "todo",
