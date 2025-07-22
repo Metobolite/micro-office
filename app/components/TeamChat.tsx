@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-
+import { supabase } from "../lib/supabase";
 interface Message {
   id: string;
   content: string;
@@ -18,7 +17,6 @@ export default function TeamChat({
   userId: string;
   userName: string;
 }) {
-  const supabase = createClientComponentClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -63,8 +61,8 @@ export default function TeamChat({
     if (!newMessage.trim()) return;
 
     const { error } = await supabase.from("messages").insert({
-      content: newMessage,
       user_id: userId,
+      content: newMessage,
       user_name: userName,
     });
 
@@ -77,7 +75,7 @@ export default function TeamChat({
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <div className="bg-white p-4 rounded shadow h-[500px] overflow-y-auto space-y-2">
+      <div className="bg-gray-800 p-4 rounded shadow h-[500px] overflow-y-auto space-y-2">
         {messages.map((msg) => (
           <div
             key={msg.id}

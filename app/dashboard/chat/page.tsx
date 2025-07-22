@@ -1,15 +1,15 @@
-import { cookies } from "next/headers";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "../../lib/supabaseServer";
 import TeamChat from "../../components/TeamChat";
 
 export default async function DashboardPage() {
-  const supabase = createServerComponentClient({ cookies: () => cookies() });
+  const supabase = await createClient();
 
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (error || !user) {
     return <div className="text-center mt-10">Lütfen giriş yapın.</div>;
   }
 
