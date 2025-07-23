@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/app/lib/supabase";
 import { useRouter } from "next/navigation";
+import { DashboardHeader } from "@/app/components/dashboard/dashboard-header";
+import { StatsCards } from "@/app/components/dashboard/stats-cards";
+import { RecentTasks } from "@/app/components/dashboard/recent-tasks";
+import { TeamMembers } from "@/app/components/dashboard/team-members";
+import { RecentMessages } from "@/app/components/dashboard/recent-messages";
+import { RecentFiles } from "@/app/components/dashboard/recent-files";
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState("");
@@ -31,32 +37,16 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1B3C53] p-8 text-black">
-      <div className="max-w-xl mx-auto bg-[#456882] shadow-lg p-6 rounded-lg">
-        <h1 className="text-2xl text-white font-bold mb-4">Dashboard</h1>
-        <p className="text-white mb-4">
-          Hoş geldin: <strong>{userName}</strong>
-        </p>
-        <div className="flex justify-between">
-          <button
-            onClick={handleLogout}
-            className="mt-6 bg-[#D2C1B6] text-black font-bold px-4 py-2 rounded hover:bg-[#e9d6ca] transform duration-300"
-          >
-            Çıkış Yap
-          </button>
-          <button
-            onClick={() => router.push("/dashboard/tasks")}
-            className="mt-6 bg-[#D2C1B6] text-black font-bold px-4 py-2 rounded hover:bg-[#e9d6ca] transform duration-300"
-          >
-            Görevlere Git
-          </button>
-          <button
-            onClick={() => router.push("/dashboard/chat")}
-            className="mt-6 bg-[#D2C1B6] text-black font-bold px-4 py-2 rounded hover:bg-[#e9d6ca] transform duration-300"
-          >
-            Chat'e Git
-          </button>
+    <div className="flex flex-col h-full">
+      <DashboardHeader />
+      <div className="flex-1 p-6 space-y-6 overflow-auto">
+        <StatsCards />
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <RecentTasks />
+          <TeamMembers />
+          <RecentMessages />
         </div>
+        <RecentFiles />
       </div>
     </div>
   );

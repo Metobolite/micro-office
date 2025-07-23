@@ -27,7 +27,7 @@ export default function Home() {
 
   return (
     <main>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#1B3C53] text-white">
+      <div className="flex flex-col min-w-full items-center justify-center min-h-screen bg-[#1B3C53] text-white">
         <h1 className="text-[96px] font-bold mb-6">Welcome to Micro Office</h1>
         <div className="flex flex-col text-center gap-4">
           <p>Micro Office is a simple task management app.</p>
