@@ -41,7 +41,7 @@ export default function AddTaskForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-4 bg-[#456882] rounded shadow space-y-4 max-w-md mx-auto"
+      className="p-4 bg-[#BCCCDC] rounded shadow space-y-4 max-w-md mx-auto"
     >
       <h2 className="text-xl font-bold">Yeni Görev Ekle</h2>
       <input

@@ -23,6 +23,10 @@ a {
   text-decoration: none;
 }
 
+h1 {
+  font-family: 'Geist', sans-serif;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
@@ -85,7 +89,7 @@ a {
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #F8FAFC;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -156,6 +160,7 @@ a {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

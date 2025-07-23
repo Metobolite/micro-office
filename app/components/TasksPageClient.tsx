@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import AddTaskForm from "./AddTaskForm";
+import Modal from "@/components/ui/modal";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 type Task = {
   id: string;
@@ -22,17 +25,15 @@ export default function TasksPageClient({
 }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  // Düzenleme için state
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  // Silme onay modalı için state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
-  // Görevleri supabase'den çek
   const fetchTasks = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -54,7 +55,6 @@ export default function TasksPageClient({
     fetchTasks();
   }, []);
 
-  // Görev silme fonksiyonu
   const deleteTask = async (taskId: string) => {
     const { error } = await supabase.from("tasks").delete().eq("id", taskId);
     if (error) {
@@ -64,7 +64,6 @@ export default function TasksPageClient({
     }
   };
 
-  // Silme onayla
   const confirmDelete = () => {
     if (!taskToDelete) return;
     deleteTask(taskToDelete.id);
@@ -72,27 +71,23 @@ export default function TasksPageClient({
     setTaskToDelete(null);
   };
 
-  // Silmeyi iptal et
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
     setTaskToDelete(null);
   };
 
-  // Düzenlemeye başla
   const startEdit = (task: Task) => {
     setEditingTask(task);
     setEditTitle(task.title);
     setEditDescription(task.description);
   };
 
-  // Düzenlemeyi iptal et
   const cancelEdit = () => {
     setEditingTask(null);
     setEditTitle("");
     setEditDescription("");
   };
 
-  // Düzenlemeyi kaydet
   const saveEdit = async () => {
     if (!editingTask) return;
 
@@ -115,7 +110,6 @@ export default function TasksPageClient({
     }
   };
 
-  // Sürükle-bırak sonrası sıralama ve durum güncellemesi
   const handleDragEnd = async (result: any) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -203,17 +197,24 @@ export default function TasksPageClient({
 
   return (
     <>
-      <div className="p-6 bg-[#1B3C53] min-h-screen text-white">
-        <AddTaskForm onTaskAdded={fetchTasks} userId={userId} />
+      <div className="p-6 min-h-screen text-white relative">
+        {/* Yeni Görev Butonu */}
+        <div className="">
+          <Button onClick={() => setShowAddModal(true)} className=" ">
+            <Plus className="h-4 w-4 mr-2" />
+            Yeni Görev
+          </Button>
+        </div>
 
+        {/* Görev Listesi */}
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             {["todo", "in_progress", "done"].map((status) => (
               <div
                 key={status}
-                className="flex flex-col bg-[#456882] p-4 rounded-md min-h-[300px]"
+                className="flex flex-col bg-[#BCCCDC] p-4 rounded-md min-h-[300px] shadow-md text-card-foreground"
               >
-                <h2 className="font-bold text-xl mb-4 capitalize pointer-events-none z-10 sticky top-0 bg-[#456882]">
+                <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
                   {status.replace("_", " ")}
                 </h2>
                 <Droppable droppableId={status}>
@@ -308,6 +309,18 @@ export default function TasksPageClient({
         </DragDropContext>
       </div>
 
+      {/* Yeni Görev Modalı */}
+      <Modal show={showAddModal} onClose={() => setShowAddModal(false)}>
+        <AddTaskForm
+          userId={userId}
+          onTaskAdded={() => {
+            setShowAddModal(false);
+            fetchTasks();
+          }}
+        />
+      </Modal>
+
+      {/* Silme onay modalı */}
       {showDeleteConfirm && taskToDelete && (
         <div className="fixed inset-0 flex items-center justify-center bg-[#00000070] z-50">
           <div className="bg-white p-6 rounded shadow max-w-sm w-full text-black modal-overlay">

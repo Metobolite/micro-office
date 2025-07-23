@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import TasksPageClient from "../../components/TasksPageClient";
 import { createClient } from "../../lib/supabaseServer";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 export default async function TasksPage() {
   const supabase = await createClient();
 
@@ -14,9 +18,18 @@ export default async function TasksPage() {
   }
 
   return (
-    <TasksPageClient
-      userId={user.id}
-      userName={user.user_metadata.full_name || user.email}
-    />
+    <div>
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <div className="flex flex-1 items-center justify-between">
+          <h1 className="text-xl font-semibold">Görevler</h1>
+        </div>
+      </header>
+      <TasksPageClient
+        userId={user.id}
+        userName={user.user_metadata.full_name || user.email}
+      />
+    </div>
   );
 }
