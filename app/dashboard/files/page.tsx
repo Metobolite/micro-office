@@ -1,110 +1,256 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Upload, Search, Filter, FileText, ImageIcon, File, Download, MoreHorizontal, Grid, List } from "lucide-react"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useEffect, useState, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/app/lib/supabase";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Upload,
+  Search,
+  Filter,
+  FileText,
+  ImageIcon,
+  File,
+  Download,
+  MoreHorizontal,
+  Grid,
+  List,
+} from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DeleteConfirmationDialog } from "@/app/components/DeleteConfirmationDialog";
 
 interface FileItem {
-  id: string
-  name: string
-  type: "pdf" | "image" | "document" | "video" | "other"
-  size: string
-  modified: string
+  id: string;
+  name: string;
+  type: "pdf" | "image" | "document" | "video" | "other";
+  size: string;
+  modified: string;
   owner: {
-    name: string
-    avatar: string
-  }
-  category: string
+    name: string;
+    avatar: string;
+  };
+  category: string;
+  url: string;
+  path: string;
 }
-
-const files: FileItem[] = [
-  {
-    id: "1",
-    name: "Project Proposal.pdf",
-    type: "pdf",
-    size: "2.4 MB",
-    modified: "2 saat önce",
-    owner: { name: "John Doe", avatar: "/placeholder.svg?height=32&width=32" },
-    category: "Dökümanlar",
-  },
-  {
-    id: "2",
-    name: "UI Mockups.fig",
-    type: "other",
-    size: "15.8 MB",
-    modified: "4 saat önce",
-    owner: { name: "Jane Smith", avatar: "/placeholder.svg?height=32&width=32" },
-    category: "Tasarım",
-  },
-  {
-    id: "3",
-    name: "Team Photo.jpg",
-    type: "image",
-    size: "3.2 MB",
-    modified: "1 gün önce",
-    owner: { name: "Mike Johnson", avatar: "/placeholder.svg?height=32&width=32" },
-    category: "Görseller",
-  },
-  {
-    id: "4",
-    name: "Database Schema.sql",
-    type: "document",
-    size: "156 KB",
-    modified: "2 gün önce",
-    owner: { name: "Sarah Wilson", avatar: "/placeholder.svg?height=32&width=32" },
-    category: "Kod",
-  },
-  {
-    id: "5",
-    name: "Demo Video.mp4",
-    type: "video",
-    size: "45.2 MB",
-    modified: "3 gün önce",
-    owner: { name: "John Doe", avatar: "/placeholder.svg?height=32&width=32" },
-    category: "Video",
-  },
-  {
-    id: "6",
-    name: "Meeting Notes.docx",
-    type: "document",
-    size: "234 KB",
-    modified: "1 hafta önce",
-    owner: { name: "Jane Smith", avatar: "/placeholder.svg?height=32&width=32" },
-    category: "Dökümanlar",
-  },
-]
 
 const getFileIcon = (type: string) => {
   switch (type) {
     case "pdf":
     case "document":
-      return FileText
+      return FileText;
     case "image":
-      return ImageIcon
+      return ImageIcon;
     default:
-      return File
+      return File;
   }
-}
+};
 
-const categories = ["Tümü", "Dökümanlar", "Görseller", "Tasarım", "Video", "Kod"]
+const categories = [
+  "Tümü",
+  "Dökümanlar",
+  "Görseller",
+  "Tasarım",
+  "Video",
+  "Kod",
+];
 
 export default function FilesPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("Tümü")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Tümü");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [userName, setUserName] = useState("Kullanıcı");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
+
+  const fetchFiles = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setUserName(user.user_metadata?.full_name || user.email || "Kullanıcı");
+
+    const { data, error } = await supabase
+      .from("files")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Dosya listeleme hatası:", error);
+      return;
+    }
+    if (!data) return;
+
+    const filesWithUrl = await Promise.all(
+      data.map(async (file: any) => {
+        const { data: urlData, error: urlError } = await supabase.storage
+          .from("user-files")
+          .createSignedUrl(file.path, 60);
+
+        if (urlError) {
+          console.error("Signed URL alma hatası:", urlError);
+        }
+
+        return {
+          id: file.id,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          modified: new Date(
+            file.uploaded_at || file.created_at
+          ).toLocaleString("tr-TR"),
+          owner: {
+            name: user.user_metadata?.full_name || user.email || "Kullanıcı",
+            avatar: "/placeholder.svg",
+          },
+          category: file.type || "Dökümanlar",
+          url: urlData?.signedUrl || "",
+          path: file.path,
+        };
+      })
+    );
+
+    setFiles(filesWithUrl);
+  };
+
+  const handleDeleteConfirmed = async (file: FileItem) => {
+    const toastId = toast.loading(`"${file.name}" siliniyor...`);
+
+    const { error: deleteStorageError } = await supabase.storage
+      .from("user-files")
+      .remove([file.path]);
+
+    if (deleteStorageError) {
+      toast.error("Storage silme hatası: " + deleteStorageError.message, {
+        id: toastId,
+      });
+      return;
+    }
+
+    const { error: deleteDbError } = await supabase
+      .from("files")
+      .delete()
+      .eq("id", file.id);
+
+    if (deleteDbError) {
+      toast.error("Veritabanı silme hatası: " + deleteDbError.message, {
+        id: toastId,
+      });
+      return;
+    }
+
+    toast.success(`"${file.name}" başarıyla silindi.`, { id: toastId });
+    fetchFiles();
+  };
+
+  const handleDownload = async (file: FileItem) => {
+    const { data, error } = await supabase.storage
+      .from("user-files")
+      .download(file.path);
+    if (error) {
+      alert("Dosya indirme hatası: " + error.message);
+      return;
+    }
+    const blob = data as Blob;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    link.click();
+  };
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
 
   const filteredFiles = files.filter((file) => {
-    const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "Tümü" || file.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+    const matchesSearch = file.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "Tümü" || file.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      alert("Lütfen giriş yapın.");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("user-files")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      alert("Dosya yüklenirken hata oluştu: " + uploadError.message);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("files").insert({
+      user_id: user.id,
+      name: file.name,
+      type: determineFileType(fileExt),
+      size: formatFileSize(file.size),
+      uploaded_at: new Date().toISOString(),
+      category: "Dökümanlar",
+      path: filePath,
+    });
+
+    if (insertError) {
+      alert(
+        "Veritabanına kayıt yapılırken hata oluştu: " + insertError.message
+      );
+      return;
+    }
+
+    fetchFiles();
+  };
+
+  const determineFileType = (ext: string | undefined) => {
+    if (!ext) return "other";
+    const e = ext.toLowerCase();
+    if (["pdf"].includes(e)) return "pdf";
+    if (["jpg", "jpeg", "png", "gif", "svg"].includes(e)) return "image";
+    if (["doc", "docx", "txt", "xls", "xlsx", "sql", "csv"].includes(e))
+      return "document";
+    if (["mp4", "avi", "mov", "mkv"].includes(e)) return "video";
+    return "other";
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    else if (bytes < 1024 * 1024 * 1024)
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    else return (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB";
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -113,10 +259,16 @@ export default function FilesPage() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-xl font-semibold">Dosyalar</h1>
-          <Button>
+          <Button onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />
             Dosya Yükle
           </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
       </header>
 
@@ -142,25 +294,37 @@ export default function FilesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 {categories.map((category) => (
-                  <DropdownMenuItem key={category} onClick={() => setSelectedCategory(category)}>
+                  <DropdownMenuItem
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                  >
                     {category}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}>
-              {viewMode === "grid" ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+            <Button
+              variant="outline"
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+            >
+              {viewMode === "grid" ? (
+                <List className="h-4 w-4" />
+              ) : (
+                <Grid className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
 
-        {/* Files Grid/List */}
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredFiles.map((file) => {
-              const Icon = getFileIcon(file.type)
+              const Icon = getFileIcon(file.type);
               return (
-                <Card key={file.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card
+                  key={file.id}
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <Icon className="h-8 w-8 text-muted-foreground" />
@@ -171,16 +335,34 @@ export default function FilesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDownload(file)}
+                          >
                             <Download className="h-4 w-4 mr-2" />
                             İndir
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Paylaş</DropdownMenuItem>
-                          <DropdownMenuItem>Sil</DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              navigator.clipboard.writeText(file.url);
+                              toast.success("Link kopyalandı!");
+                            }}
+                          >
+                            Linki Kopyala
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setFileToDelete(file);
+                              setShowDeleteDialog(true);
+                            }}
+                          >
+                            Sil
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <h3 className="font-medium text-sm mb-2 truncate">{file.name}</h3>
+                    <h3 className="font-medium text-sm mb-2 truncate">
+                      {file.name}
+                    </h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{file.size}</span>
@@ -190,7 +372,9 @@ export default function FilesPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarImage src={file.owner.avatar || "/placeholder.svg"} />
+                          <AvatarImage
+                            src={file.owner.avatar || "/placeholder.svg"}
+                          />
                           <AvatarFallback className="text-xs">
                             {file.owner.name
                               .split(" ")
@@ -198,12 +382,14 @@ export default function FilesPage() {
                               .join("")}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-muted-foreground">{file.modified}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {file.modified}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )
+              );
             })}
           </div>
         ) : (
@@ -211,9 +397,13 @@ export default function FilesPage() {
             <CardContent className="p-0">
               <div className="divide-y">
                 {filteredFiles.map((file) => {
-                  const Icon = getFileIcon(file.type)
+                  const Icon = getFileIcon(file.type);
                   return (
-                    <div key={file.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-4 hover:bg-muted/50"
+                      onClick={() => window.open(file.url, "_blank")}
+                    >
                       <div className="flex items-center space-x-3">
                         <Icon className="h-6 w-6 text-muted-foreground" />
                         <div>
@@ -223,7 +413,9 @@ export default function FilesPage() {
                             <span>{file.modified}</span>
                             <div className="flex items-center space-x-1">
                               <Avatar className="h-4 w-4">
-                                <AvatarImage src={file.owner.avatar || "/placeholder.svg"} />
+                                <AvatarImage
+                                  src={file.owner.avatar || "/placeholder.svg"}
+                                />
                                 <AvatarFallback className="text-xs">
                                   {file.owner.name
                                     .split(" ")
@@ -245,7 +437,9 @@ export default function FilesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => window.open(file.url, "_blank")}
+                            >
                               <Download className="h-4 w-4 mr-2" />
                               İndir
                             </DropdownMenuItem>
@@ -255,13 +449,23 @@ export default function FilesPage() {
                         </DropdownMenu>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </CardContent>
           </Card>
         )}
       </div>
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        file={fileToDelete}
+        onConfirm={(file) => {
+          handleDeleteConfirmed(file);
+          setShowDeleteDialog(false);
+          setFileToDelete(null);
+        }}
+      />
     </div>
-  )
+  );
 }
