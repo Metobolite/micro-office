@@ -3,8 +3,7 @@ import TasksPageClient from "../../components/TasksPageClient";
 import { createClient } from "../../lib/supabaseServer";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+
 export default async function TasksPage() {
   const supabase = await createClient();
 

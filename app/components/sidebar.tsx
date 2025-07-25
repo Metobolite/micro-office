@@ -38,9 +38,9 @@ const navigation = [
   {
     title: "Araçlar",
     items: [
-      { title: "Dosyalar", url: "/files", icon: FileText },
-      { title: "Zaman Takibi", url: "/timer", icon: Timer },
-      { title: "Takvim", url: "/calendar", icon: Calendar },
+      { title: "Dosyalar", url: "/dashboard/files", icon: FileText },
+      { title: "Zaman Takibi", url: "/dashboard/timer", icon: Timer },
+      { title: "Takvim", url: "/dashboard/calendar", icon: Calendar },
     ],
   },
   {

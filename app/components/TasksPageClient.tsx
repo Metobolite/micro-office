@@ -215,7 +215,15 @@ export default function TasksPageClient({
                 className="flex flex-col bg-[#BCCCDC] p-4 rounded-md min-h-[300px] shadow-md text-card-foreground"
               >
                 <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
-                  {status.replace("_", " ")}
+                  {status.replace("_", " ")}{" "}
+                  <span
+                    className="ml-2 text-[#1B3C53] font-semibold"
+                    style={{
+                      textShadow: "0 0 6px #1B3C53, 0 0 12px #1B3C53",
+                    }}
+                  >
+                    {getTasksByStatus(status).length}
+                  </span>
                 </h2>
                 <Droppable droppableId={status}>
                   {(provided) => (
