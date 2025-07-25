@@ -29,21 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteConfirmationDialog } from "@/app/components/DeleteConfirmationDialog";
-
-interface FileItem {
-  id: string;
-  name: string;
-  type: "pdf" | "image" | "document" | "video" | "other";
-  size: string;
-  modified: string;
-  owner: {
-    name: string;
-    avatar: string;
-  };
-  category: string;
-  url: string;
-  path: string;
-}
+import { FileItem } from "@/app/types/file";
 
 const getFileIcon = (type: string) => {
   switch (type) {
