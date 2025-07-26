@@ -90,7 +90,7 @@ export default function TeamChat({
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-xl font-semibold">Takım Sohbeti</h1>
           <div className="flex items-center space-x-2">
-            <div className="flex -space-x-2">
+            <div className="flex ">
               {[1, 2, 3, 4].map((i) => (
                 <Avatar key={i} className="h-8 w-8 border-2 border-background">
                   <AvatarImage
@@ -140,14 +140,6 @@ export default function TeamChat({
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                     <div className={`flex-1 ${isOwn ? "text-right" : ""}`}>
-                      <div className="flex items-center space-x-2 mb-1 justify-between">
-                        <span className="text-sm font-medium">
-                          {message.user_name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {time}
-                        </span>
-                      </div>
                       <div
                         className={`inline-block p-3 rounded-lg max-w-xs lg:max-w-md ${
                           isOwn
@@ -156,6 +148,11 @@ export default function TeamChat({
                         }`}
                       >
                         <p className="text-sm">{message.content}</p>
+                      </div>
+                      <div className="flex items-center space-x-2 mb-1 justify-end">
+                        <span className="text-xs text-muted-foreground">
+                          {time}
+                        </span>
                       </div>
                     </div>
                   </div>

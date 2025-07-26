@@ -9,10 +9,10 @@ import {
   Timer,
   CheckSquare,
   Users,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -26,40 +26,54 @@ import {
   SidebarRail,
 } from "../../components/ui/sidebar";
 
-const navigation = [
-  {
-    title: "Ana Sayfa",
-    items: [
-      { title: "Dashboard", url: "/dashboard", icon: Home },
-      { title: "Görevler", url: "/dashboard/tasks", icon: CheckSquare },
-      { title: "Sohbet", url: "/dashboard/chat", icon: MessageSquare },
-    ],
-  },
-  {
-    title: "Araçlar",
-    items: [
-      { title: "Dosyalar", url: "/dashboard/files", icon: FileText },
-      { title: "Zaman Takibi", url: "/dashboard/timer", icon: Timer },
-      { title: "Takvim", url: "/dashboard/calendar", icon: Calendar },
-    ],
-  },
-  {
-    title: "Ayarlar",
-    items: [
-      { title: "Takım", url: "/team", icon: Users },
-      { title: "Profil", url: "/settings", icon: Settings },
-    ],
-  },
-];
-
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const res = await fetch("/auth/logout", {
+      method: "POST",
+    });
+
+    if (res.redirected) {
+      router.push(res.url);
+    } else {
+      router.push("/auth/login");
+    }
+  };
+
+  const navigation = [
+    {
+      title: "Ana Sayfa",
+      items: [
+        { title: "Dashboard", url: "/dashboard", icon: Home },
+        { title: "Görevler", url: "/dashboard/tasks", icon: CheckSquare },
+        { title: "Sohbet", url: "/dashboard/chat", icon: MessageSquare },
+      ],
+    },
+    {
+      title: "Araçlar",
+      items: [
+        { title: "Dosyalar", url: "/dashboard/files", icon: FileText },
+        { title: "Zaman Takibi", url: "/dashboard/timer", icon: Timer },
+        { title: "Takvim", url: "/dashboard/calendar", icon: Calendar },
+      ],
+    },
+    {
+      title: "Ayarlar",
+      items: [
+        { title: "Takım", url: "/team", icon: Users },
+        { title: "Profil", url: "/settings", icon: Settings },
+        { title: "Logout", icon: LogOut, onClick: handleLogout },
+      ],
+    },
+  ];
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">ProjectHub</h2>
+          <h2 className="text-lg font-semibold">Micro Office</h2>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -70,12 +84,22 @@ export function AppSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.url}>
-                      <Link href={item.url}>
+                    {item.onClick ? (
+                      <SidebarMenuButton onClick={item.onClick}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                      </SidebarMenuButton>
+                    ) : (
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === item.url}
+                      >
+                        <Link href={item.url}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    )}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
