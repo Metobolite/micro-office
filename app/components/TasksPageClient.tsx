@@ -7,14 +7,7 @@ import Modal from "@/components/ui/modal";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-
-type Task = {
-  id: string;
-  title: string;
-  description: string;
-  status: "todo" | "in_progress" | "done";
-  sort_order: number;
-};
+import { Task } from "@/app/types/task";
 
 export default function TasksPageClient({
   userId,

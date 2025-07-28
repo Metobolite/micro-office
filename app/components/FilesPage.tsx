@@ -44,14 +44,7 @@ const getFileIcon = (type: string) => {
   }
 };
 
-const categories = [
-  "Tümü",
-  "Dökümanlar",
-  "Görseller",
-  "Tasarım",
-  "Video",
-  "Kod",
-];
+const categories = ["Tümü", "pdf", "image", "document", "video"];
 
 export function FilesPage({
   userId,
@@ -84,7 +77,7 @@ export function FilesPage({
       data.map(async (file: any) => {
         const { data: urlData, error: urlError } = await supabase.storage
           .from("user-files")
-          .createSignedUrl(file.path, 60);
+          .createSignedUrl(file.path, 3660);
 
         if (urlError) {
           console.error("Signed URL alma hatası:", urlError);
@@ -177,13 +170,17 @@ export function FilesPage({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const cleanFileName = file.name
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_.-]/g, "_");
+
     const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `${userId}/${file.name}`;
+    const filePath = `${userId}/${Date.now()}_${cleanFileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("user-files")
-      .upload(filePath, file);
+      .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
       alert("Dosya yüklenirken hata oluştu: " + uploadError.message);
@@ -192,7 +189,7 @@ export function FilesPage({
 
     const { error: insertError } = await supabase.from("files").insert({
       user_id: userId,
-      name: file.name,
+      name: cleanFileName,
       type: determineFileType(fileExt),
       size: formatFileSize(file.size),
       uploaded_at: new Date().toISOString(),

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function DashboardHeader() {
+export function DashboardHeader({ userName }: { userName: string }) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
@@ -22,7 +22,12 @@ export function DashboardHeader() {
           </Button>
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder.svg?height=32&width=32" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarFallback>
+              {userName
+                ?.split(" ")
+                .map((n) => n[0])
+                .join("") || "U"}
+            </AvatarFallback>
           </Avatar>
         </div>
       </div>
