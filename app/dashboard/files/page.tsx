@@ -2,6 +2,7 @@
 
 import { createClient } from "@/app/lib/supabaseServer";
 import { FilesPage } from "@/app/components/FilesPage";
+import { redirect } from "next/navigation";
 
 export default async function Page() {
   const supabase = await createClient();
@@ -11,8 +12,8 @@ export default async function Page() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
-    return <div className="text-center mt-10">Lütfen giriş yapın.</div>;
+  if (!user || error) {
+    redirect("/auth/login");
   }
 
   return (

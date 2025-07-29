@@ -1,44 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/app/lib/supabaseServer";
 
-const tasks = [
-  {
-    id: 1,
-    title: "UI Design Review",
-    status: "In Progress",
-    priority: "High",
-    assignee: {
-      name: "John Doe",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    dueDate: "2024-01-15",
-  },
-  {
-    id: 2,
-    title: "Database Migration",
-    status: "To Do",
-    priority: "Medium",
-    assignee: {
-      name: "Jane Smith",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    dueDate: "2024-01-18",
-  },
-  {
-    id: 3,
-    title: "API Documentation",
-    status: "Done",
-    priority: "Low",
-    assignee: {
-      name: "Mike Johnson",
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    dueDate: "2024-01-12",
-  },
-];
+export async function RecentTasks() {
+  const supabase = await createClient();
 
-export function RecentTasks() {
+  const { data: tasks, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+  if (error || !tasks) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Son Görevler</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Görevler yüklenemedi.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -49,25 +35,27 @@ export function RecentTasks() {
           <div key={task.id} className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={task.assignee.avatar || "/placeholder.svg"} />
+                <AvatarImage src={task.avatar || "/placeholder.svg"} />
                 <AvatarFallback>
-                  {task.assignee.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {task.assignee_name
+                    ?.split(" ")
+                    .map((n: string) => n[0])
+                    .join("") || "NA"}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="text-sm font-medium">{task.title}</p>
-                <p className="text-xs text-muted-foreground">{task.dueDate}</p>
+                <p className="text-xs text-muted-foreground">
+                  {task.due_date || "Tarih Yok"}
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant={task.status === "Done" ? "default" : "secondary"}>
+              <Badge variant={task.status === "done" ? "default" : "secondary"}>
                 {task.status}
               </Badge>
               <Badge
-                variant={task.priority === "High" ? "destructive" : "outline"}
+                variant={task.priority === "high" ? "destructive" : "outline"}
               >
                 {task.priority}
               </Badge>

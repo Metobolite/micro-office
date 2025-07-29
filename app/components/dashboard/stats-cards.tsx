@@ -1,84 +1,43 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckSquare, Clock, Users, FileText } from "lucide-react";
-import { supabase } from "@/app/lib/supabase";
+import { createClient } from "@/app/lib/supabaseServer";
 
-export function StatsCards() {
-  const [totalTasks, setTotalTasks] = useState(0);
-  const [completedTasks, setCompletedTasks] = useState(0);
-  const [teamMembers, setTeamMembers] = useState(0);
-  const [totalFiles, setTotalFiles] = useState(0);
+export default async function StatsCards() {
+  const supabase = await createClient();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      // Görevleri getir
-      const { data: tasks, error: taskError } = await supabase
-        .from("tasks")
-        .select("*");
+  const { data: tasks } = await supabase.from("tasks").select("*");
+  const { data: users } = await supabase.from("users").select("*");
+  const { data: files } = await supabase.from("files").select("*");
 
-      if (taskError) {
-        console.error("Görevleri alırken hata:", taskError.message);
-      } else {
-        setTotalTasks(tasks.length);
-        setCompletedTasks(
-          tasks.filter((task) => task.status === "done").length
-        );
-      }
-
-      // Takım üyelerini getir
-      const { data: users, error: userError } = await supabase
-        .from("users")
-        .select("*");
-
-      if (userError) {
-        console.error("Kullanıcıları alırken hata:", userError.message);
-      } else {
-        setTeamMembers(users.length);
-      }
-
-      // Dosyaları getir
-      const { data: files, error: fileError } = await supabase
-        .from("files")
-        .select("*");
-
-      if (fileError) {
-        console.error("Dosyaları alırken hata:", fileError.message);
-      } else {
-        setTotalFiles(files.length);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  const totalTasks = tasks?.length ?? 0;
+  const completedTasks = tasks?.filter((t) => t.status === "done").length ?? 0;
 
   const stats = [
     {
       title: "Toplam Görevler",
       value: totalTasks,
-      change: "+12%", // örnek statik değer
-      icon: CheckSquare,
+      change: "+12%",
+      icon: Clock,
       color: "text-blue-600",
     },
     {
       title: "Tamamlanan",
       value: completedTasks,
-      change: "+8%", // örnek statik değer
-      icon: Clock,
+      change: "+8%",
+      icon: CheckSquare,
       color: "text-green-600",
     },
     {
       title: "Takım Üyeleri",
-      value: teamMembers,
-      change: "+2", // örnek statik değer
+      value: users?.length ?? 0,
+      change: "+2",
       icon: Users,
       color: "text-purple-600",
     },
     {
       title: "Dosyalar",
-      value: totalFiles,
-      change: "+24", // örnek statik değer
+      value: files?.length ?? 0,
+      change: "+24",
       icon: FileText,
       color: "text-orange-600",
     },

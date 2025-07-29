@@ -1,10 +1,11 @@
 import { createClient } from "@/app/lib/supabaseServer";
 import { DashboardHeader } from "@/app/components/dashboard/dashboard-header";
-import { StatsCards } from "@/app/components/dashboard/stats-cards";
+import StatsCards from "@/app/components/dashboard/stats-cards";
 import { RecentTasks } from "@/app/components/dashboard/recent-tasks";
 import { TeamMembers } from "@/app/components/dashboard/team-members";
 import { RecentMessages } from "@/app/components/dashboard/recent-messages";
 import { RecentFiles } from "@/app/components/dashboard/recent-files";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,8 +15,8 @@ export default async function DashboardPage() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
-    return <div className="text-center mt-10">Lütfen giriş yapın.</div>;
+  if (!user || error) {
+    redirect("/auth/login");
   }
 
   return (

@@ -1,5 +1,6 @@
 import { createClient } from "../../lib/supabaseServer";
 import TeamChat from "../../components/TeamChat";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -9,8 +10,8 @@ export default async function DashboardPage() {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
-    return <div className="text-center mt-10">Lütfen giriş yapın.</div>;
+  if (!user || error) {
+    redirect("/auth/login");
   }
 
   return (
