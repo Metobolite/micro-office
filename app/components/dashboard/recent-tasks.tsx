@@ -3,6 +3,17 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/app/lib/supabaseServer";
 
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleString("tr-TR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export async function RecentTasks() {
   const supabase = await createClient();
 
@@ -46,7 +57,7 @@ export async function RecentTasks() {
               <div>
                 <p className="text-sm font-medium">{task.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {task.due_date || "Tarih Yok"}
+                  {formatDate(task.created_at)}
                 </p>
               </div>
             </div>

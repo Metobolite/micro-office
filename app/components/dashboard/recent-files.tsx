@@ -1,32 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, ImageIcon, File } from "lucide-react";
-
-const files = [
-  {
-    name: "Project Proposal.pdf",
-    size: "2.4 MB",
-    modified: "2 saat önce",
-    type: "pdf",
-  },
-  {
-    name: "UI Mockups.fig",
-    size: "15.8 MB",
-    modified: "4 saat önce",
-    type: "design",
-  },
-  {
-    name: "Database Schema.sql",
-    size: "156 KB",
-    modified: "1 gün önce",
-    type: "code",
-  },
-  {
-    name: "Team Photo.jpg",
-    size: "3.2 MB",
-    modified: "2 gün önce",
-    type: "image",
-  },
-];
+import { createClient } from "@/app/lib/supabaseServer";
 
 const getFileIcon = (type: string) => {
   switch (type) {
@@ -39,7 +13,38 @@ const getFileIcon = (type: string) => {
   }
 };
 
-export function RecentFiles() {
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleString("tr-TR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export async function RecentFiles() {
+  const supabase = await createClient();
+
+  const { data: files, error } = await supabase
+    .from("files")
+    .select("*")
+    .order("uploaded_at", { ascending: false })
+    .limit(4);
+
+  if (error || !files) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Son Görevler</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Görevler yüklenemedi.</p>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardHeader>
@@ -59,7 +64,7 @@ export function RecentFiles() {
                   <p className="text-sm font-medium truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground">{file.size}</p>
                   <p className="text-xs text-muted-foreground">
-                    {file.modified}
+                    {formatDate(file.uploaded_at)}
                   </p>
                 </div>
               </div>

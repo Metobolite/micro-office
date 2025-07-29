@@ -1,31 +1,40 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/app/lib/supabaseServer";
 
-const messages = [
-  {
-    id: 1,
-    user: "John Doe",
-    message: "UI tasarımı hazır, inceleme için gönderiyorum.",
-    time: "5 dk önce",
-    avatar: "/placeholder.svg?height=32&width=32",
-  },
-  {
-    id: 2,
-    user: "Jane Smith",
-    message: "Database migration tamamlandı.",
-    time: "15 dk önce",
-    avatar: "/placeholder.svg?height=32&width=32",
-  },
-  {
-    id: 3,
-    user: "Mike Johnson",
-    message: "Toplantı saat 14:00'da başlayacak.",
-    time: "1 saat önce",
-    avatar: "/placeholder.svg?height=32&width=32",
-  },
-];
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleString("tr-TR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-export function RecentMessages() {
+export async function RecentMessages() {
+  const supabase = await createClient();
+
+  const { data: messages, error } = await supabase
+    .from("messages")
+    .select("*")
+    .order("inserted_at", { ascending: false })
+    .limit(4);
+
+  if (error || !messages) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Son Görevler</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Görevler yüklenemedi.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -33,23 +42,25 @@ export function RecentMessages() {
       </CardHeader>
       <CardContent className="space-y-4">
         {messages.map((message) => (
-          <div key={message.id} className="flex items-start space-x-3">
+          <div key={message.id} className="flex items-center space-x-3">
             <Avatar className="h-8 w-8">
               <AvatarImage src={message.avatar || "/placeholder.svg"} />
               <AvatarFallback>
-                {message.user
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
+                {message.user_name
+                  ?.split(" ")
+                  .map((n: string) => n[0])
+                  .join("") || "NA"}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{message.user}</p>
-                <p className="text-xs text-muted-foreground">{message.time}</p>
+                <p className="text-sm font-medium">{message.user_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(message.inserted_at)}
+                </p>
               </div>
               <p className="text-sm text-muted-foreground truncate">
-                {message.message}
+                {message.content}
               </p>
             </div>
           </div>
