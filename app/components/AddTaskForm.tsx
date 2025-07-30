@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/app/lib/supabase";
+import { Button } from "@/components/ui/button";
 
 export default function AddTaskForm({
   userId,
@@ -12,59 +13,70 @@ export default function AddTaskForm({
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [priority, setPriority] = useState("medium");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!title.trim()) return;
 
-    const { error } = await supabase.from("tasks").insert([
-      {
-        user_id: userId,
-        title,
-        description,
-        status: "todo",
-      },
-    ]);
+    const { error } = await supabase.from("tasks").insert({
+      user_id: userId,
+      title,
+      description,
+      priority,
+    });
 
-    if (error) {
-      alert("Görev eklenemedi: " + error.message);
-    } else {
+    if (!error) {
       setTitle("");
       setDescription("");
+      setPriority("medium");
       onTaskAdded();
+    } else {
+      alert("Görev eklenirken hata oluştu: " + error.message);
     }
-
-    setLoading(false);
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="p-4 bg-[#BCCCDC] rounded shadow space-y-4 max-w-md mx-auto"
-    >
-      <h2 className="text-xl font-bold">Yeni Görev Ekle</h2>
-      <input
-        type="text"
-        placeholder="Başlık"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-        className="w-full p-2 border rounded"
-      />
-      <textarea
-        placeholder="Açıklama"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        className="w-full p-2 border rounded"
-      />
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-[#D2C1B6] text-black font-bold px-4 py-2 rounded hover:bg-[#e9d6ca] transform duration-300"
-      >
-        {loading ? "Ekleniyor..." : "Görev Ekle"}
-      </button>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1 text-black">
+          Başlık
+        </label>
+        <input
+          className="w-full p-2 border border-gray-400 rounded text-black"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1 text-black">
+          Açıklama
+        </label>
+        <textarea
+          className="w-full p-2 border border-gray-400 rounded text-black"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1 text-black">
+          Öncelik
+        </label>
+        <select
+          className="w-full p-2 border border-gray-400 rounded text-black"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+        >
+          <option value="low">Düşük</option>
+          <option value="medium">Orta</option>
+          <option value="high">Yüksek</option>
+        </select>
+      </div>
+
+      <Button type="submit">Görev Ekle</Button>
     </form>
   );
 }

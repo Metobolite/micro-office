@@ -5,5 +5,6 @@ export interface Task {
   title: string;
   description: string;
   status: TaskStatus;
+  priority: "low" | "medium" | "high";
   sort_order: number;
 }

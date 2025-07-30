@@ -43,7 +43,7 @@ export async function RecentMessages() {
       <CardContent className="space-y-4">
         {messages.map((message) => (
           <div key={message.id} className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-10 w-10">
               <AvatarImage src={message.avatar || "/placeholder.svg"} />
               <AvatarFallback>
                 {message.user_name

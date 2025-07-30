@@ -45,7 +45,7 @@ export async function RecentTasks() {
         {tasks.map((task) => (
           <div key={task.id} className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-10 w-10">
                 <AvatarImage src={task.avatar || "/placeholder.svg"} />
                 <AvatarFallback>
                   {task.assignee_name
@@ -62,11 +62,27 @@ export async function RecentTasks() {
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant={task.status === "done" ? "default" : "secondary"}>
-                {task.status}
+              <Badge
+                variant={
+                  task.status === "done"
+                    ? "default"
+                    : task.status === "in_progress"
+                    ? "third"
+                    : "secondary"
+                }
+              >
+                {task.status.replace("_", " ")}{" "}
               </Badge>
               <Badge
-                variant={task.priority === "high" ? "destructive" : "outline"}
+                className={
+                  task.priority === "high"
+                    ? "bg-red-500 text-white"
+                    : task.priority === "medium"
+                    ? "bg-yellow-300 text-black"
+                    : task.priority === "low"
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-400 text-white"
+                }
               >
                 {task.priority}
               </Badge>

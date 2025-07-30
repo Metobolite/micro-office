@@ -23,6 +23,9 @@ export default function TasksPageClient({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editPriority, setEditPriority] = useState<"low" | "medium" | "high">(
+    "medium"
+  );
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -73,12 +76,14 @@ export default function TasksPageClient({
     setEditingTask(task);
     setEditTitle(task.title);
     setEditDescription(task.description);
+    setEditPriority(task.priority);
   };
 
   const cancelEdit = () => {
     setEditingTask(null);
     setEditTitle("");
     setEditDescription("");
+    setEditPriority("medium");
   };
 
   const saveEdit = async () => {
@@ -86,7 +91,11 @@ export default function TasksPageClient({
 
     const { error } = await supabase
       .from("tasks")
-      .update({ title: editTitle, description: editDescription })
+      .update({
+        title: editTitle,
+        description: editDescription,
+        priority: editPriority,
+      })
       .eq("id", editingTask.id);
 
     if (error) {
@@ -95,7 +104,12 @@ export default function TasksPageClient({
       setTasks((prev) =>
         prev.map((task) =>
           task.id === editingTask.id
-            ? { ...task, title: editTitle, description: editDescription }
+            ? {
+                ...task,
+                title: editTitle,
+                description: editDescription,
+                priority: editPriority,
+              }
             : task
         )
       );
@@ -188,10 +202,22 @@ export default function TasksPageClient({
       .filter((task) => task.status === status)
       .sort((a, b) => a.sort_order - b.sort_order);
 
+  const getPriorityBadgeColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-600 text-white";
+      case "medium":
+        return "bg-yellow-500 text-black";
+      case "low":
+        return "bg-green-600 text-white";
+      default:
+        return "bg-gray-400 text-white";
+    }
+  };
+
   return (
     <>
       <div className="p-6 min-h-screen text-white relative">
-        {/* Yeni Görev Butonu */}
         <div className="">
           <Button onClick={() => setShowAddModal(true)} className=" ">
             <Plus className="h-4 w-4 mr-2" />
@@ -199,7 +225,6 @@ export default function TasksPageClient({
           </Button>
         </div>
 
-        {/* Görev Listesi */}
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             {["todo", "in_progress", "done"].map((status) => (
@@ -248,12 +273,28 @@ export default function TasksPageClient({
                                     }
                                   />
                                   <textarea
-                                    className="w-full mb-2 p-1 border border-gray-300 rounded"
+                                    className="w-full p-1 border border-gray-300 rounded"
                                     value={editDescription}
                                     onChange={(e) =>
                                       setEditDescription(e.target.value)
                                     }
                                   />
+                                  <select
+                                    className="w-full p-1 border border-gray-300 rounded mb-2"
+                                    value={editPriority}
+                                    onChange={(e) =>
+                                      setEditPriority(
+                                        e.target.value as
+                                          | "low"
+                                          | "medium"
+                                          | "high"
+                                      )
+                                    }
+                                  >
+                                    <option value="low">Düşük</option>
+                                    <option value="medium">Orta</option>
+                                    <option value="high">Yüksek</option>
+                                  </select>
                                   <div className="flex gap-2 justify-end">
                                     <button
                                       onClick={saveEdit}
@@ -271,10 +312,21 @@ export default function TasksPageClient({
                                 </>
                               ) : (
                                 <>
-                                  <h3 className="font-semibold">
-                                    {task.title}
-                                  </h3>
-                                  <p className="text-sm">{task.description}</p>
+                                  <div className="flex justify-between items-start">
+                                    <h3 className="font-semibold">
+                                      {task.title}
+                                    </h3>
+                                    <span
+                                      className={`text-xs px-2 py-1 rounded absolute bottom-2 right-2 ${getPriorityBadgeColor(
+                                        task.priority
+                                      )}`}
+                                    >
+                                      {task.priority}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm mt-1">
+                                    {task.description}
+                                  </p>
                                   <div className="absolute top-2 right-2 flex gap-1">
                                     <button
                                       onClick={() => startEdit(task)}
@@ -310,7 +362,6 @@ export default function TasksPageClient({
         </DragDropContext>
       </div>
 
-      {/* Yeni Görev Modalı */}
       <Modal show={showAddModal} onClose={() => setShowAddModal(false)}>
         <AddTaskForm
           userId={userId}
@@ -321,7 +372,6 @@ export default function TasksPageClient({
         />
       </Modal>
 
-      {/* Silme onay modalı */}
       {showDeleteConfirm && taskToDelete && (
         <div className="fixed inset-0 flex items-center justify-center bg-[#00000070] z-50">
           <div className="bg-white p-6 rounded shadow max-w-sm w-full text-black modal-overlay">
