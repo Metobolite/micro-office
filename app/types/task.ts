@@ -7,4 +7,5 @@ export interface Task {
   status: TaskStatus;
   priority: "low" | "medium" | "high";
   sort_order: number;
+  due_date?: string | null;
 }

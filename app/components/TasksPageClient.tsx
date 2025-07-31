@@ -8,14 +8,9 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Task } from "@/app/types/task";
+import { toast } from "sonner";
 
-export default function TasksPageClient({
-  userId,
-  userName,
-}: {
-  userId: string;
-  userName: string;
-}) {
+export default function TasksPageClient({ userId }: { userId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -26,9 +21,24 @@ export default function TasksPageClient({
   const [editPriority, setEditPriority] = useState<"low" | "medium" | "high">(
     "medium"
   );
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editDueTime, setEditDueTime] = useState("");
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  function formatDate(dateString: string) {
+    const date = new Date(dateString);
+    return date.toLocaleString("tr-TR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  const today = new Date().toISOString().split("T")[0];
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -77,6 +87,10 @@ export default function TasksPageClient({
     setEditTitle(task.title);
     setEditDescription(task.description);
     setEditPriority(task.priority);
+    setEditDueDate(
+      task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : ""
+    );
+    setEditDueTime(task.due_date ? task.due_date.slice(11, 16) : "");
   };
 
   const cancelEdit = () => {
@@ -84,10 +98,26 @@ export default function TasksPageClient({
     setEditTitle("");
     setEditDescription("");
     setEditPriority("medium");
+    setEditDueDate("");
+    setEditDueTime("");
   };
 
   const saveEdit = async () => {
     if (!editingTask) return;
+
+    if (!editTitle.trim()) {
+      toast.error("Başlık boş olamaz!");
+      return;
+    }
+
+    const fullDate = editDueTime
+      ? `${editDueDate}T${editDueTime}:00`
+      : `${editDueDate}T00:00:00`;
+
+    if (fullDate < today) {
+      toast.error("Tarih gecmiş olamaz!");
+      return;
+    }
 
     const { error } = await supabase
       .from("tasks")
@@ -95,11 +125,12 @@ export default function TasksPageClient({
         title: editTitle,
         description: editDescription,
         priority: editPriority,
+        due_date: fullDate ? fullDate : null,
       })
       .eq("id", editingTask.id);
 
     if (error) {
-      alert("Görev güncellenirken hata oluştu: " + error.message);
+      toast.error("Görev güncellenirken hata oluştu: " + error.message);
     } else {
       setTasks((prev) =>
         prev.map((task) =>
@@ -109,10 +140,12 @@ export default function TasksPageClient({
                 title: editTitle,
                 description: editDescription,
                 priority: editPriority,
+                due_date: editDueDate ? fullDate : null,
               }
             : task
         )
       );
+      toast.success("Görev başarıyla güncellendi!");
       cancelEdit();
     }
   };
@@ -234,12 +267,7 @@ export default function TasksPageClient({
               >
                 <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
                   {status.replace("_", " ")}{" "}
-                  <span
-                    className="ml-2 text-[#1B3C53] font-semibold"
-                    style={{
-                      textShadow: "0 0 6px #1B3C53, 0 0 12px #1B3C53",
-                    }}
-                  >
+                  <span className="ml-2 text-[#1B3C53] font-semibold bg-[#F9F3EF] px-2 rounded-lg">
                     {getTasksByStatus(status).length}
                   </span>
                 </h2>
@@ -261,10 +289,10 @@ export default function TasksPageClient({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="bg-[#F9F3EF] text-[#1B3C53] p-4 mb-3 rounded shadow relative"
+                              className="bg-[#F9F3EF] text-[#1B3C53] min-h-[80px] p-4 mb-3 rounded shadow relative"
                             >
                               {editingTask?.id === task.id ? (
-                                <>
+                                <div className="transition-all duration-300 ease-in-out">
                                   <input
                                     className="w-full mb-2 p-1 border border-gray-300 rounded"
                                     value={editTitle}
@@ -295,6 +323,24 @@ export default function TasksPageClient({
                                     <option value="medium">Orta</option>
                                     <option value="high">Yüksek</option>
                                   </select>
+                                  <input
+                                    type="date"
+                                    className="w-full p-2 border border-gray-300 rounded text-black mb-2"
+                                    value={editDueDate}
+                                    onChange={(e) =>
+                                      setEditDueDate(e.target.value)
+                                    }
+                                    min={today}
+                                  />
+                                  <input
+                                    type="time"
+                                    className="w-full p-2 border border-gray-300 rounded text-black mb-2"
+                                    value={editDueTime}
+                                    onChange={(e) =>
+                                      setEditDueTime(e.target.value)
+                                    }
+                                  />
+
                                   <div className="flex gap-2 justify-end">
                                     <button
                                       onClick={saveEdit}
@@ -309,9 +355,9 @@ export default function TasksPageClient({
                                       İptal
                                     </button>
                                   </div>
-                                </>
+                                </div>
                               ) : (
-                                <>
+                                <div className="transition-all duration-300 ease-in-out">
                                   <div className="flex justify-between items-start">
                                     <h3 className="font-semibold">
                                       {task.title}
@@ -326,6 +372,11 @@ export default function TasksPageClient({
                                   </div>
                                   <p className="text-sm mt-1">
                                     {task.description}
+                                  </p>
+                                  <p className="text-xs mt-1">
+                                    {!task.due_date || task.due_date === null
+                                      ? "Süresiz"
+                                      : formatDate(task.due_date)}
                                   </p>
                                   <div className="absolute top-2 right-2 flex gap-1">
                                     <button
@@ -346,7 +397,7 @@ export default function TasksPageClient({
                                       Sil
                                     </button>
                                   </div>
-                                </>
+                                </div>
                               )}
                             </div>
                           )}

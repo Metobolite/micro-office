@@ -28,7 +28,7 @@ export default function Modal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="rounded-lg shadow-lg p-6 w-full max-w-lg bg-[#BCCCDC]"
+        className="rounded-lg shadow-lg p-6 w-full max-w-lg bg-[#BCCCDC] modal-overlay"
       >
         {children}
       </div>

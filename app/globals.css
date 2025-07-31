@@ -174,3 +174,7 @@ h1 {
     @apply bg-background text-foreground;
   }
 }
+
+::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

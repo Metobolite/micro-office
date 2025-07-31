@@ -25,10 +25,7 @@ export default async function TasksPage() {
           <h1 className="text-xl font-semibold">Görevler</h1>
         </div>
       </header>
-      <TasksPageClient
-        userId={user.id}
-        userName={user.user_metadata.full_name || user.email}
-      />
+      <TasksPageClient userId={user.id} />
     </div>
   );
 }

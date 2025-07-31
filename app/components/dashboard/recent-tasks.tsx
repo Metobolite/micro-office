@@ -57,7 +57,7 @@ export async function RecentTasks() {
               <div>
                 <p className="text-sm font-medium">{task.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(task.created_at)}
+                  {formatDate(task.due_date)}
                 </p>
               </div>
             </div>
