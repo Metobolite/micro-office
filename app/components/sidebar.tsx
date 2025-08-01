@@ -55,7 +55,7 @@ export function AppSidebar() {
       title: "Araçlar",
       items: [
         { title: "Dosyalar", url: "/dashboard/files", icon: FileText },
-        { title: "Zaman Takibi", url: "/dashboard/timer", icon: Timer },
+        { title: "Zaman Takibi", url: "/dashboard/time-tracker", icon: Timer },
         { title: "Takvim", url: "/dashboard/calendar", icon: Calendar },
       ],
     },
