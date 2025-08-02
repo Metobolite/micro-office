@@ -10,17 +10,7 @@ import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import AddEventModal from "./AddEventModal";
-
-type EventType = {
-  id: number;
-  title: string;
-  description?: string;
-  type: "meeting" | "review" | "presentation" | "planning";
-  date: string;
-  time?: string;
-  duration?: string;
-  attendees?: { name: string; avatar?: string }[];
-};
+import { EventType } from "@/app/types/EventType";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -48,11 +38,14 @@ export default function Calendar() {
     0
   ).getDate();
 
-  const firstDayOfMonth = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    1
-  ).getDay();
+  const firstDayOfMonth = (() => {
+    const day = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    ).getDay();
+    return (day + 6) % 7;
+  })();
 
   const monthNames = [
     "Ocak",
@@ -69,7 +62,7 @@ export default function Calendar() {
     "Aralık",
   ];
 
-  const dayNames = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+  const dayNames = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
   // events'i tarih bazında grupla (lookup objesi)
   const eventsByDate = useMemo(() => {
@@ -114,7 +107,7 @@ export default function Calendar() {
 
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
-        <div key={`empty-${i}`} className="h-24 border border-border/50" />
+        <div key={`empty-${i}`} className="min-h-24 border border-border/50" />
       );
     }
 
@@ -130,7 +123,7 @@ export default function Calendar() {
       days.push(
         <div
           key={day}
-          className={`h-24 border border-border/50 p-2 ${
+          className={`min-h-24 border border-border/50 p-2 ${
             isToday ? "bg-primary/10" : ""
           }`}
         >
@@ -254,7 +247,10 @@ export default function Calendar() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="flex -space-x-1">
-                      {event.attendees?.map((att, i) => (
+                      {(Array.isArray(event.attendees)
+                        ? event.attendees
+                        : []
+                      ).map((att, i) => (
                         <Avatar
                           key={i}
                           className="h-6 w-6 border-2 border-background"

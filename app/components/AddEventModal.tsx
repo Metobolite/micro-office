@@ -57,9 +57,8 @@ export default function AddEventModal({
       console.error(error);
     } else {
       toast.success("Etkinlik eklendi!");
-      onEventAdded(); // Burada parent'taki fetchEvents tetikleniyor
+      onEventAdded();
       setOpen(false);
-      // Formu resetle
       setTitle("");
       setDescription("");
       setType("meeting");
