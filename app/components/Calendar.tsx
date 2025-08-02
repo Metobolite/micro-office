@@ -9,8 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import AddEventModal from "./AddEventModal";
+import AddEventModal from "./calendar/AddEventModal";
 import { EventType } from "@/app/types/EventType";
+import EditEventModal from "./calendar/EditEventModal";
+import DeleteEventModal from "./calendar/DeleteEventModal";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -31,13 +33,11 @@ export default function Calendar() {
   }, []);
 
   const today = useMemo(() => new Date(), []);
-
   const daysInMonth = new Date(
     currentDate.getFullYear(),
     currentDate.getMonth() + 1,
     0
   ).getDate();
-
   const firstDayOfMonth = (() => {
     const day = new Date(
       currentDate.getFullYear(),
@@ -61,10 +61,8 @@ export default function Calendar() {
     "Kasım",
     "Aralık",
   ];
-
   const dayNames = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
-  // events'i tarih bazında grupla (lookup objesi)
   const eventsByDate = useMemo(() => {
     const map: Record<string, EventType[]> = {};
     events.forEach((event) => {
@@ -76,17 +74,14 @@ export default function Calendar() {
     return map;
   }, [events]);
 
-  // Bugünün tarih string'i (saatten bağımsız)
   const todayString = useMemo(() => new Date().toDateString(), []);
-
-  // Bugün olan etkinlikler
-  const todayEvents = useMemo(() => {
-    return events.filter(
-      (event) => new Date(event.date).toDateString() === todayString
-    );
-  }, [events, todayString]);
-
-  // Yaklaşan etkinlikler (bugünden sonraki)
+  const todayEvents = useMemo(
+    () =>
+      events.filter(
+        (event) => new Date(event.date).toDateString() === todayString
+      ),
+    [events, todayString]
+  );
   const upcomingEvents = useMemo(() => {
     const now = new Date();
     return events.filter((event) => new Date(event.date) > now);
@@ -104,19 +99,16 @@ export default function Calendar() {
 
   const renderCalendarDays = () => {
     const days = [];
-
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
         <div key={`empty-${i}`} className="min-h-24 border border-border/50" />
       );
     }
-
     for (let day = 1; day <= daysInMonth; day++) {
       const isToday =
         today.getDate() === day &&
         today.getMonth() === currentDate.getMonth() &&
         today.getFullYear() === currentDate.getFullYear();
-
       const key = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${day}`;
       const eventsOnThisDay = eventsByDate[key] || [];
 
@@ -147,7 +139,6 @@ export default function Calendar() {
         </div>
       );
     }
-
     return days;
   };
 
@@ -161,6 +152,7 @@ export default function Calendar() {
           <AddEventModal onEventAdded={fetchEvents} />
         </div>
       </header>
+
       <div className="flex-1 p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Takvim */}
@@ -232,11 +224,7 @@ export default function Calendar() {
                           : "outline"
                       }
                     >
-                      {event.type === "meeting"
-                        ? "Toplantı"
-                        : event.type === "review"
-                        ? "İnceleme"
-                        : "Sunum"}
+                      {event.type}
                     </Badge>
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -269,6 +257,11 @@ export default function Calendar() {
                       {event.attendees?.length || 0} katılımcı
                     </span>
                   </div>
+                  <DeleteEventModal
+                    eventId={event.id}
+                    onDeleted={fetchEvents}
+                  />
+                  <EditEventModal event={event} onEventUpdated={fetchEvents} />
                 </div>
               ))}
             </CardContent>
@@ -289,15 +282,15 @@ export default function Calendar() {
                     {new Date(event.date).toLocaleDateString("tr-TR")} -{" "}
                     {event.time?.slice(0, 5)}
                   </p>
-                  <Badge variant="outline" className="text-xs">
-                    {event.type === "planning"
-                      ? "Planlama"
-                      : event.type === "review"
-                      ? "İnceleme"
-                      : event.type === "meeting"
-                      ? "Toplantı"
-                      : "Sunum"}
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {event.type}
                   </Badge>
+                  <DeleteEventModal
+                    eventId={event.id}
+                    onDeleted={fetchEvents}
+                  />
+
+                  <EditEventModal event={event} onEventUpdated={fetchEvents} />
                 </div>
               ))}
             </div>

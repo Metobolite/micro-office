@@ -73,7 +73,7 @@ export default function AddEventModal({
       <DialogTrigger asChild>
         <Button>+ Etkinlik Ekle</Button>
       </DialogTrigger>
-      <DialogContent className="space-y-4">
+      <DialogContent className="space-y-2">
         <DialogHeader>
           <VisuallyHidden>
             <DialogTitle>Etkinlik Ekle</DialogTitle>
