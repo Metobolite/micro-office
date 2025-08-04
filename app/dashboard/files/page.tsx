@@ -1,7 +1,7 @@
 // app/files/page.tsx
 
 import { createClient } from "@/app/lib/supabaseServer";
-import { FilesPage } from "@/app/components/FilesPage";
+import { FilesPage } from "@/app/components/files/FilesPage";
 import { redirect } from "next/navigation";
 
 export default async function Page() {

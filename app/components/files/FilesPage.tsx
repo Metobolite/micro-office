@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/app/components/DeleteConfirmationDialog";
+import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmationDialog";
 import { FileItem } from "@/app/types/file";
 
 const getFileIcon = (type: string) => {

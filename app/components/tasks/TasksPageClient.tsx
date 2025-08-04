@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "@/app/lib/supabase";
 import AddTaskForm from "./AddTaskForm";
 import Modal from "@/components/ui/modal";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";

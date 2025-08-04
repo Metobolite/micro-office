@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import TasksPageClient from "../../components/TasksPageClient";
+import TasksPageClient from "../../components/tasks/TasksPageClient";
 import { createClient } from "../../lib/supabaseServer";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";

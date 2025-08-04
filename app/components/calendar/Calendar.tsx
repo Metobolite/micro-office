@@ -9,10 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import AddEventModal from "./calendar/AddEventModal";
+import AddEventModal from "./AddEventModal";
 import { EventType } from "@/app/types/EventType";
-import EditEventModal from "./calendar/EditEventModal";
-import DeleteEventModal from "./calendar/DeleteEventModal";
+import EditEventModal from "./EditEventModal";
+import DeleteEventModal from "./DeleteEventModal";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());

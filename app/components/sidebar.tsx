@@ -62,7 +62,7 @@ export function AppSidebar() {
     {
       title: "Ayarlar",
       items: [
-        { title: "Takım", url: "/team", icon: Users },
+        { title: "Takım", url: "/dashboard/team", icon: Users },
         { title: "Profil", url: "/settings", icon: Settings },
         { title: "Logout", icon: LogOut, onClick: handleLogout },
       ],

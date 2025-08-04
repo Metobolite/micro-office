@@ -1,5 +1,5 @@
 import { createClient } from "../../lib/supabaseServer";
-import TeamChat from "../../components/TeamChat";
+import TeamChat from "../../components/chat/TeamChat";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {

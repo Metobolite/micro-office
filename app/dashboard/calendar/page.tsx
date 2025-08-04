@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Calendar from "../../components/Calendar";
+import Calendar from "../../components/calendar/Calendar";
 import { createClient } from "../../lib/supabaseServer";
 
 export default async function CalendarPage() {

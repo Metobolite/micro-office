@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import TeamTimeTracker from "../../components/TeamTimeTracker";
+import TeamTimeTracker from "../../components/time-tracker/TeamTimeTracker";
 import { createClient } from "../../lib/supabaseServer";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
