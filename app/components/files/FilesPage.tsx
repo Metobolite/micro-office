@@ -48,9 +48,11 @@ const categories = ["Tümü", "pdf", "image", "document", "video"];
 export function FilesPage({
   userId,
   userName,
+  teamId,
 }: {
   userId: string;
   userName: string;
+  teamId: string;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -64,7 +66,8 @@ export function FilesPage({
     const { data, error } = await supabase
       .from("files")
       .select("*")
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .eq("team_id", teamId);
 
     if (error) {
       console.error("Dosya listeleme hatası:", error);
@@ -121,7 +124,8 @@ export function FilesPage({
     const { error: deleteDbError } = await supabase
       .from("files")
       .delete()
-      .eq("id", file.id);
+      .eq("id", file.id)
+      .eq("team_id", teamId);
 
     if (deleteDbError) {
       toast.error("Veritabanı silme hatası: " + deleteDbError.message, {
@@ -188,6 +192,7 @@ export function FilesPage({
 
     const { error: insertError } = await supabase.from("files").insert({
       user_id: userId,
+      team_id: teamId,
       name: cleanFileName,
       type: determineFileType(fileExt),
       size: formatFileSize(file.size),

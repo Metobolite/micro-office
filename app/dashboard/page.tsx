@@ -6,6 +6,7 @@ import { TeamMembers } from "@/app/components/dashboard/team-members";
 import { RecentMessages } from "@/app/components/dashboard/recent-messages";
 import { RecentFiles } from "@/app/components/dashboard/recent-files";
 import { redirect } from "next/navigation";
+import CreateTeamForm from "@/app/components/team/CreateTeamForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -17,6 +18,16 @@ export default async function DashboardPage() {
 
   if (!user || error) {
     redirect("/auth/login");
+  }
+
+  const { data: teamMember } = await supabase
+    .from("team_members")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!teamMember) {
+    return <CreateTeamForm userId={user.id} />;
   }
 
   return (

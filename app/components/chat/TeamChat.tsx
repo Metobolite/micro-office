@@ -23,9 +23,11 @@ interface Message {
 export default function TeamChat({
   userId,
   userName,
+  teamId,
 }: {
   userId: string;
   userName: string;
+  teamId: string;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -40,6 +42,7 @@ export default function TeamChat({
       const { data, error } = await supabase
         .from("messages")
         .select("*")
+        .eq("team_id", teamId)
         .order("inserted_at", { ascending: true });
 
       if (error) console.error("Mesajlar alınamadı:", error);
@@ -70,6 +73,7 @@ export default function TeamChat({
 
     const { error } = await supabase.from("messages").insert({
       user_id: userId,
+      team_id: teamId,
       content: newMessage,
       user_name: userName,
     });

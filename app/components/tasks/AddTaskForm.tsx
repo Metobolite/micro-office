@@ -8,9 +8,11 @@ import { toast } from "sonner";
 export default function AddTaskForm({
   userId,
   onTaskAdded,
+  teamId,
 }: {
   userId: string;
   onTaskAdded: () => void;
+  teamId: string;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -44,6 +46,7 @@ export default function AddTaskForm({
       description,
       priority,
       due_date: dueDateTime,
+      team_id: teamId,
     });
 
     if (!error) {

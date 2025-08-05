@@ -10,7 +10,13 @@ import { Plus } from "lucide-react";
 import { Task } from "@/app/types/task";
 import { toast } from "sonner";
 
-export default function TasksPageClient({ userId }: { userId: string }) {
+export default function TasksPageClient({
+  userId,
+  teamId,
+}: {
+  userId: string;
+  teamId: string;
+}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -46,6 +52,7 @@ export default function TasksPageClient({ userId }: { userId: string }) {
       .from("tasks")
       .select("*")
       .eq("user_id", userId)
+      .eq("team_id", teamId)
       .order("status", { ascending: true })
       .order("sort_order", { ascending: true });
 
@@ -62,7 +69,11 @@ export default function TasksPageClient({ userId }: { userId: string }) {
   }, []);
 
   const deleteTask = async (taskId: string) => {
-    const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", taskId)
+      .eq("team_id", teamId);
     if (error) {
       alert("Görev silinirken hata oluştu: " + error.message);
     } else {
@@ -115,7 +126,7 @@ export default function TasksPageClient({ userId }: { userId: string }) {
       : `${editDueDate}T00:00:00`;
 
     if (fullDate < today) {
-      toast.error("Tarih gecmiş olamaz!");
+      toast.error("Tarih geçmiş olamaz!");
       return;
     }
 
@@ -127,7 +138,8 @@ export default function TasksPageClient({ userId }: { userId: string }) {
         priority: editPriority,
         due_date: fullDate ? fullDate : null,
       })
-      .eq("id", editingTask.id);
+      .eq("id", editingTask.id)
+      .eq("team_id", teamId);
 
     if (error) {
       toast.error("Görev güncellenirken hata oluştu: " + error.message);
@@ -180,7 +192,8 @@ export default function TasksPageClient({ userId }: { userId: string }) {
         await supabase
           .from("tasks")
           .update({ sort_order: tasksInColumn.indexOf(task) })
-          .eq("id", task.id);
+          .eq("id", task.id)
+          .eq("team_id", teamId);
       }
     } else {
       const sourceTasks = tasks
@@ -225,7 +238,8 @@ export default function TasksPageClient({ userId }: { userId: string }) {
                 : sourceTasks.findIndex((x) => x.id === task.id),
             status: task.status,
           })
-          .eq("id", task.id);
+          .eq("id", task.id)
+          .eq("team_id", teamId);
       }
     }
   };
@@ -420,6 +434,7 @@ export default function TasksPageClient({ userId }: { userId: string }) {
             setShowAddModal(false);
             fetchTasks();
           }}
+          teamId={teamId}
         />
       </Modal>
 

@@ -52,11 +52,11 @@ export async function RecentFiles() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {files.map((file) => {
+          {files.slice(0, 4).map((file) => {
             const Icon = getFileIcon(file.type);
             return (
               <div
-                key={file.name}
+                key={file.id}
                 className="flex items-center space-x-3 p-3 rounded-lg border"
               >
                 <Icon className="h-8 w-8 text-muted-foreground" />
