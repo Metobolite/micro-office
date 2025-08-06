@@ -14,9 +14,20 @@ export default async function CalendarPage() {
     redirect("/auth/login");
   }
 
+  const { data: teamMember, error: teamError } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .single();
+
+  if (!teamMember || teamError) {
+    redirect("/create-team");
+  }
+
   return (
     <div>
-      <Calendar />
+      <Calendar teamId={teamMember.team_id} />
     </div>
   );
 }

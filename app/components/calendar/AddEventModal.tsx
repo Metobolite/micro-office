@@ -18,8 +18,10 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export default function AddEventModal({
   onEventAdded,
+  teamId,
 }: {
   onEventAdded: () => void;
+  teamId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -43,6 +45,7 @@ export default function AddEventModal({
         date,
         time,
         duration,
+        team_id: teamId,
         attendees: JSON.stringify([
           {
             name: "John Doe",

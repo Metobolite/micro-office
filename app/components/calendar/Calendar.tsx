@@ -14,7 +14,7 @@ import { EventType } from "@/app/types/EventType";
 import EditEventModal from "./EditEventModal";
 import DeleteEventModal from "./DeleteEventModal";
 
-export default function Calendar() {
+export default function Calendar({ teamId }: { teamId: string }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<EventType[]>([]);
 
@@ -22,6 +22,7 @@ export default function Calendar() {
     const { data, error } = await supabase
       .from("events")
       .select("*")
+      .eq("team_id", teamId)
       .order("date", { ascending: true });
 
     if (error) console.error("Etkinlikler alınamadı:", error);
@@ -149,7 +150,9 @@ export default function Calendar() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-xl font-semibold">Takvim</h1>
-          <AddEventModal onEventAdded={fetchEvents} />
+          <AddEventModal onEventAdded={fetchEvents}
+          teamId={teamId}
+          />
         </div>
       </header>
 
@@ -261,7 +264,7 @@ export default function Calendar() {
                     eventId={event.id}
                     onDeleted={fetchEvents}
                   />
-                  <EditEventModal event={event} onEventUpdated={fetchEvents} />
+                  <EditEventModal event={event} onEventUpdated={fetchEvents} teamId={teamId}/>
                 </div>
               ))}
             </CardContent>
@@ -290,7 +293,7 @@ export default function Calendar() {
                     onDeleted={fetchEvents}
                   />
 
-                  <EditEventModal event={event} onEventUpdated={fetchEvents} />
+                  <EditEventModal event={event} onEventUpdated={fetchEvents} teamId={teamId} />
                 </div>
               ))}
             </div>

@@ -17,9 +17,11 @@ import { toast } from "sonner";
 export default function EditEventModal({
   event,
   onEventUpdated,
+  teamId,
 }: {
   event: any;
   onEventUpdated: () => void;
+  teamId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(event.title);
@@ -40,7 +42,8 @@ export default function EditEventModal({
         time,
         duration,
       })
-      .eq("id", event.id);
+      .eq("id", event.id)
+      .eq("team_id", teamId);
 
     if (error) {
       toast.error("Etkinlik güncellenemedi.");

@@ -2,7 +2,7 @@ import { createClient } from "@/app/lib/supabaseServer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Mail, Phone, MapPin, Plus, MoreHorizontal } from "lucide-react";
+import { Mail, Phone, MapPin, MoreHorizontal } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { AddTeamMemberForm } from "@/app/components/team/AddTeamMemberForm";
@@ -13,7 +13,7 @@ export default async function TeamPage() {
   const { data } = await supabase
     .from("team_members")
     .select(
-      "id, status, project_role, joined_at, name, email, phone, avatar_url"
+      "team_id, user_id, role, status, joined_at, name, email, phone, avatar_url"
     );
 
   const teamMembers = (data || []).map((member) => ({
@@ -78,7 +78,10 @@ export default async function TeamPage() {
         {/* Team Members */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {teamMembers.map((member) => (
-            <Card key={member.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={member.user_id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div className="relative">
@@ -107,9 +110,7 @@ export default async function TeamPage() {
                 </div>
                 <div>
                   <CardTitle className="text-lg">{member.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {member.project_role}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{member.role}</p>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
