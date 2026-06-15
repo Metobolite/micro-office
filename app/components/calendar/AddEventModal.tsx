@@ -17,9 +17,11 @@ import { toast } from "sonner";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export default function AddEventModal({
+  userId,
   onEventAdded,
   teamId,
 }: {
+  userId: string;
   onEventAdded: () => void;
   teamId: string;
 }) {
@@ -46,6 +48,7 @@ export default function AddEventModal({
         time,
         duration,
         team_id: teamId,
+        user_id: userId,
         attendees: JSON.stringify([
           {
             name: "John Doe",

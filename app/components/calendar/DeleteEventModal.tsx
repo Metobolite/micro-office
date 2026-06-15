@@ -12,14 +12,16 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
 export default function DeleteEventModal({
+  userId,
   eventId,
   onDeleted,
 }: {
+  userId: string;
   eventId: string;
   onDeleted: () => void;
 }) {
   const handleDelete = async () => {
-    const { error } = await supabase.from("events").delete().eq("id", eventId);
+    const { error } = await supabase.from("events").delete().eq("id", eventId).eq("user_id", userId);
     if (error) {
       toast.error("Etkinlik silinemedi.");
       console.error(error);

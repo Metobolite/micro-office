@@ -14,7 +14,13 @@ import { EventType } from "@/app/types/EventType";
 import EditEventModal from "./EditEventModal";
 import DeleteEventModal from "./DeleteEventModal";
 
-export default function Calendar({ teamId }: { teamId: string }) {
+export default function Calendar({
+  userId,
+  teamId,
+}: {
+  teamId: string;
+  userId: string;
+}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<EventType[]>([]);
 
@@ -23,6 +29,7 @@ export default function Calendar({ teamId }: { teamId: string }) {
       .from("events")
       .select("*")
       .eq("team_id", teamId)
+      .eq("user_id", userId)
       .order("date", { ascending: true });
 
     if (error) console.error("Etkinlikler alınamadı:", error);
@@ -37,13 +44,13 @@ export default function Calendar({ teamId }: { teamId: string }) {
   const daysInMonth = new Date(
     currentDate.getFullYear(),
     currentDate.getMonth() + 1,
-    0
+    0,
   ).getDate();
   const firstDayOfMonth = (() => {
     const day = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
-      1
+      1,
     ).getDay();
     return (day + 6) % 7;
   })();
@@ -79,9 +86,9 @@ export default function Calendar({ teamId }: { teamId: string }) {
   const todayEvents = useMemo(
     () =>
       events.filter(
-        (event) => new Date(event.date).toDateString() === todayString
+        (event) => new Date(event.date).toDateString() === todayString,
       ),
-    [events, todayString]
+    [events, todayString],
   );
   const upcomingEvents = useMemo(() => {
     const now = new Date();
@@ -93,8 +100,8 @@ export default function Calendar({ teamId }: { teamId: string }) {
       new Date(
         currentDate.getFullYear(),
         currentDate.getMonth() + (direction === "next" ? 1 : -1),
-        1
-      )
+        1,
+      ),
     );
   };
 
@@ -102,7 +109,7 @@ export default function Calendar({ teamId }: { teamId: string }) {
     const days = [];
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
-        <div key={`empty-${i}`} className="min-h-24 border border-border/50" />
+        <div key={`empty-${i}`} className="min-h-24 border border-border/50" />,
       );
     }
     for (let day = 1; day <= daysInMonth; day++) {
@@ -137,7 +144,7 @@ export default function Calendar({ teamId }: { teamId: string }) {
               </div>
             ))}
           </div>
-        </div>
+        </div>,
       );
     }
     return days;
@@ -150,8 +157,10 @@ export default function Calendar({ teamId }: { teamId: string }) {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-xl font-semibold">Takvim</h1>
-          <AddEventModal onEventAdded={fetchEvents}
-          teamId={teamId}
+          <AddEventModal
+            onEventAdded={fetchEvents}
+            teamId={teamId}
+            userId={userId}
           />
         </div>
       </header>
@@ -223,8 +232,8 @@ export default function Calendar({ teamId }: { teamId: string }) {
                         event.type === "meeting"
                           ? "default"
                           : event.type === "review"
-                          ? "secondary"
-                          : "outline"
+                            ? "secondary"
+                            : "outline"
                       }
                     >
                       {event.type}
@@ -263,8 +272,14 @@ export default function Calendar({ teamId }: { teamId: string }) {
                   <DeleteEventModal
                     eventId={event.id}
                     onDeleted={fetchEvents}
+                    userId={userId}
                   />
-                  <EditEventModal event={event} onEventUpdated={fetchEvents} teamId={teamId}/>
+                  <EditEventModal
+                    event={event}
+                    onEventUpdated={fetchEvents}
+                    teamId={teamId}
+                    userId={userId}
+                  />
                 </div>
               ))}
             </CardContent>
@@ -291,9 +306,15 @@ export default function Calendar({ teamId }: { teamId: string }) {
                   <DeleteEventModal
                     eventId={event.id}
                     onDeleted={fetchEvents}
+                    userId={userId}
                   />
 
-                  <EditEventModal event={event} onEventUpdated={fetchEvents} teamId={teamId} />
+                  <EditEventModal
+                    event={event}
+                    onEventUpdated={fetchEvents}
+                    teamId={teamId}
+                    userId={userId}
+                  />
                 </div>
               ))}
             </div>

@@ -27,7 +27,7 @@ export default async function CalendarPage() {
 
   return (
     <div>
-      <Calendar teamId={teamMember.team_id} />
+      <Calendar userId={user.id} teamId={teamMember.team_id} />
     </div>
   );
 }

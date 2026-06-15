@@ -18,10 +18,12 @@ export default function EditEventModal({
   event,
   onEventUpdated,
   teamId,
+  userId,
 }: {
   event: any;
   onEventUpdated: () => void;
   teamId: string;
+  userId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(event.title);
@@ -43,7 +45,8 @@ export default function EditEventModal({
         duration,
       })
       .eq("id", event.id)
-      .eq("team_id", teamId);
+      .eq("team_id", teamId)
+      .eq("user_id", userId);
 
     if (error) {
       toast.error("Etkinlik güncellenemedi.");
