@@ -14,12 +14,13 @@ function formatDate(dateString: string) {
   });
 }
 
-export async function RecentTasks() {
+export async function RecentTasks({ teamId }: { teamId: string }) {
   const supabase = await createClient();
 
   const { data: tasks, error } = await supabase
     .from("tasks")
     .select("*")
+    .eq("team_id", teamId)
     .order("created_at", { ascending: false })
     .limit(4);
 
@@ -67,8 +68,8 @@ export async function RecentTasks() {
                   task.status === "done"
                     ? "default"
                     : task.status === "in_progress"
-                    ? "third"
-                    : "secondary"
+                      ? "third"
+                      : "secondary"
                 }
               >
                 {task.status.replace("_", " ")}{" "}
@@ -78,10 +79,10 @@ export async function RecentTasks() {
                   task.priority === "high"
                     ? "bg-red-500 text-white"
                     : task.priority === "medium"
-                    ? "bg-yellow-300 text-black"
-                    : task.priority === "low"
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-400 text-white"
+                      ? "bg-yellow-300 text-black"
+                      : task.priority === "low"
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-400 text-white"
                 }
               >
                 {task.priority}

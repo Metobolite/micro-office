@@ -12,7 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +29,8 @@ import {
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTeamId = searchParams.get("teamId");
 
   const handleLogout = async () => {
     const res = await fetch("/auth/logout", {
@@ -69,6 +71,14 @@ export function AppSidebar() {
     },
   ];
 
+  const withTeamId = (url?: string) => {
+    if (!url || !activeTeamId || !url.startsWith("/dashboard")) {
+      return url;
+    }
+
+    return `${url}${url.includes("?") ? "&" : "?"}teamId=${activeTeamId}`;
+  };
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b p-4">
@@ -94,7 +104,7 @@ export function AppSidebar() {
                         asChild
                         isActive={pathname === item.url}
                       >
-                        <Link href={item.url}>
+                        <Link href={withTeamId(item.url) ?? item.url}>
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </Link>

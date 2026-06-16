@@ -1,35 +1,30 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/app/lib/supabaseServer";
 
-const teamMembers = [
-  {
-    name: "John Doe",
-    role: "Frontend Developer",
-    status: "online",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    name: "Jane Smith",
-    role: "Backend Developer",
-    status: "away",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    name: "Mike Johnson",
-    role: "UI/UX Designer",
-    status: "online",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    name: "Sarah Wilson",
-    role: "Project Manager",
-    status: "offline",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-]
+export async function TeamMembers({ teamId }: { teamId: string }) {
+  const supabase = await createClient();
 
-export function TeamMembers() {
+  const { data: teamMembers, error } = await supabase
+    .from("team_members")
+    .select("user_id, role, status, name, email, avatar_url, joined_at")
+    .eq("team_id", teamId)
+    .order("joined_at", { ascending: false });
+
+  if (error || !teamMembers) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Takım Üyeleri</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Üyeler yüklenemedi.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -37,16 +32,20 @@ export function TeamMembers() {
       </CardHeader>
       <CardContent className="space-y-4">
         {teamMembers.map((member) => (
-          <div key={member.name} className="flex items-center justify-between">
+          <div
+            key={member.user_id || member.email || member.name}
+            className="flex items-center justify-between"
+          >
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={member.avatar || "/placeholder.svg"} />
+                  <AvatarImage src={member.avatar_url || "/placeholder.svg"} />
                   <AvatarFallback>
                     {member.name
                       .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                      .map((n: string) => n[0])
+                      .join("")
+                      .toUpperCase() || "NA"}
                   </AvatarFallback>
                 </Avatar>
                 <div
@@ -64,10 +63,14 @@ export function TeamMembers() {
                 <p className="text-xs text-muted-foreground">{member.role}</p>
               </div>
             </div>
-            <Badge variant={member.status === "online" ? "default" : "secondary"}>{member.status}</Badge>
+            <Badge
+              variant={member.status === "online" ? "default" : "secondary"}
+            >
+              {member.status}
+            </Badge>
           </div>
         ))}
       </CardContent>
     </Card>
-  )
+  );
 }

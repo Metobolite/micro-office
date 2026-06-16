@@ -5,13 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export function DashboardHeader({ userName }: { userName: string }) {
+export function DashboardHeader({
+  userName,
+  teamName,
+}: {
+  userName: string;
+  teamName?: string | null;
+}) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <div className="flex flex-1 items-center justify-between">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <div>
+          <h1 className="text-xl font-semibold">Dashboard</h1>
+          {teamName ? (
+            <p className="text-xs text-muted-foreground">{teamName}</p>
+          ) : null}
+        </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />

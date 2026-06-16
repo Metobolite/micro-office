@@ -24,12 +24,13 @@ function formatDate(dateString: string) {
   });
 }
 
-export async function RecentFiles() {
+export async function RecentFiles({ teamId }: { teamId: string }) {
   const supabase = await createClient();
 
   const { data: files, error } = await supabase
     .from("files")
     .select("*")
+    .eq("team_id", teamId)
     .order("uploaded_at", { ascending: false })
     .limit(4);
 

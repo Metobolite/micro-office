@@ -1,8 +1,16 @@
 import { createClient } from "../../lib/supabaseServer";
 import TeamChat from "../../components/chat/TeamChat";
 import { redirect } from "next/navigation";
+import {
+  getTeamContext,
+  getTeamIdFromSearchParams,
+} from "@/app/lib/team-context";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: { teamId?: string | string[] };
+}) {
   const supabase = await createClient();
 
   const {
@@ -14,14 +22,13 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  const { data: teamMember, error: teamError } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
+  const { activeTeamId } = await getTeamContext(
+    supabase,
+    user.id,
+    getTeamIdFromSearchParams(searchParams),
+  );
 
-  if (!teamMember || teamError) {
+  if (!activeTeamId) {
     redirect("/create-team");
   }
 
@@ -29,7 +36,7 @@ export default async function DashboardPage() {
     <TeamChat
       userId={user.id}
       userName={user.user_metadata.full_name || user.email}
-      teamId={teamMember.team_id}
+      teamId={activeTeamId}
     />
   );
 }

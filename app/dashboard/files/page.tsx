@@ -3,8 +3,16 @@
 import { createClient } from "@/app/lib/supabaseServer";
 import { FilesPage } from "@/app/components/files/FilesPage";
 import { redirect } from "next/navigation";
+import {
+  getTeamContext,
+  getTeamIdFromSearchParams,
+} from "@/app/lib/team-context";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: { teamId?: string | string[] };
+}) {
   const supabase = await createClient();
 
   const {
@@ -16,14 +24,13 @@ export default async function Page() {
     redirect("/auth/login");
   }
 
-  const { data: teamMember, error: teamError } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
+  const { activeTeamId } = await getTeamContext(
+    supabase,
+    user.id,
+    getTeamIdFromSearchParams(searchParams),
+  );
 
-  if (!teamMember || teamError) {
+  if (!activeTeamId) {
     redirect("/create-team");
   }
 
@@ -31,7 +38,7 @@ export default async function Page() {
     <FilesPage
       userId={user.id}
       userName={user.user_metadata?.full_name || user.email || "Kullanıcı"}
-      teamId={teamMember.team_id}
+      teamId={activeTeamId}
     />
   );
 }

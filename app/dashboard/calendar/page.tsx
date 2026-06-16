@@ -1,8 +1,16 @@
 import { redirect } from "next/navigation";
 import Calendar from "../../components/calendar/Calendar";
 import { createClient } from "../../lib/supabaseServer";
+import {
+  getTeamContext,
+  getTeamIdFromSearchParams,
+} from "@/app/lib/team-context";
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams?: { teamId?: string | string[] };
+}) {
   const supabase = await createClient();
 
   const {
@@ -14,20 +22,19 @@ export default async function CalendarPage() {
     redirect("/auth/login");
   }
 
-  const { data: teamMember, error: teamError } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
+  const { activeTeamId } = await getTeamContext(
+    supabase,
+    user.id,
+    getTeamIdFromSearchParams(searchParams),
+  );
 
-  if (!teamMember || teamError) {
+  if (!activeTeamId) {
     redirect("/create-team");
   }
 
   return (
     <div>
-      <Calendar userId={user.id} teamId={teamMember.team_id} />
+      <Calendar userId={user.id} teamId={activeTeamId} />
     </div>
   );
 }

@@ -13,12 +13,13 @@ function formatDate(dateString: string) {
   });
 }
 
-export async function RecentMessages() {
+export async function RecentMessages({ teamId }: { teamId: string }) {
   const supabase = await createClient();
 
   const { data: messages, error } = await supabase
     .from("messages")
     .select("*")
+    .eq("team_id", teamId)
     .order("inserted_at", { ascending: false })
     .limit(4);
 

@@ -12,7 +12,7 @@ export default function AuthCallback() {
       const { data } = await supabase.auth.getSession();
 
       if (data.session) {
-        router.replace("/dashboard");
+        router.replace("/teams");
       } else {
         router.replace("/auth/login");
       }

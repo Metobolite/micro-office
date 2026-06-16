@@ -7,8 +7,13 @@ import { RecentMessages } from "@/app/components/dashboard/recent-messages";
 import { RecentFiles } from "@/app/components/dashboard/recent-files";
 import { redirect } from "next/navigation";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
+import { getTeamContext, getTeamIdFromSearchParams } from "../lib/team-context";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: { teamId?: string | string[] };
+}) {
   const supabase = await createClient();
 
   const {
@@ -20,13 +25,14 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  const { data: teamMember } = await supabase
-    .from("team_members")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const requestedTeamId = getTeamIdFromSearchParams(searchParams);
+  const { activeTeamId, activeTeam } = await getTeamContext(
+    supabase,
+    user.id,
+    requestedTeamId,
+  );
 
-  if (!teamMember) {
+  if (!activeTeamId) {
     return <CreateTeamForm userId={user.id} />;
   }
 
@@ -34,15 +40,16 @@ export default async function DashboardPage() {
     <div className="flex flex-col h-full">
       <DashboardHeader
         userName={user.user_metadata?.full_name || user.email || "Kullanıcı"}
+        teamName={activeTeam?.name}
       />
       <div className="flex-1 p-6 space-y-6 overflow-auto">
-        <StatsCards />
+        <StatsCards teamId={activeTeamId} />
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          <RecentTasks />
-          <TeamMembers />
-          <RecentMessages />
+          <RecentTasks teamId={activeTeamId} />
+          <TeamMembers teamId={activeTeamId} />
+          <RecentMessages teamId={activeTeamId} />
         </div>
-        <RecentFiles />
+        <RecentFiles teamId={activeTeamId} />
       </div>
     </div>
   );

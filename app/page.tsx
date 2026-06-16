@@ -19,7 +19,7 @@ export default function Home() {
 
   const handleClick = () => {
     if (loggedIn) {
-      window.location.href = "/dashboard";
+      window.location.href = "/teams";
     } else {
       window.location.href = "/auth/login";
     }
@@ -36,7 +36,7 @@ export default function Home() {
             onClick={handleClick}
             className="bg-[#D2C1B6] text-black text-2xl px-6 py-2 rounded-lg hover:bg-[#e9d6cb] transition duration-300 hover:-translate-y-1 hover:shadow-[#F9F3EF] hover:shadow-md"
           >
-            {loggedIn ? "Go to Dashboard" : "Sign in"}
+            {loggedIn ? "Go to Teams" : "Sign in"}
           </button>
         </div>
       </div>

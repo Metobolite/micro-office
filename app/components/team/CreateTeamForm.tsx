@@ -16,6 +16,10 @@ export default function CreateTeamForm({ userId }: { userId: string }) {
     e.preventDefault();
 
     startTransition(async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       const { data: team, error: teamError } = await supabase
         .from("teams")
         .insert({ name: teamName, owner_id: userId })
@@ -33,6 +37,9 @@ export default function CreateTeamForm({ userId }: { userId: string }) {
           team_id: team.id,
           user_id: userId,
           role: "owner",
+          name:
+            user?.user_metadata?.full_name || user?.user_metadata?.name || "",
+          email: user?.email || "",
           joined_at: new Date().toISOString(),
         });
 
@@ -41,7 +48,7 @@ export default function CreateTeamForm({ userId }: { userId: string }) {
         return;
       }
 
-      router.refresh();
+      router.push("/teams");
     });
   };
 

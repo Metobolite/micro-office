@@ -2,12 +2,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckSquare, Clock, Users, FileText } from "lucide-react";
 import { createClient } from "@/app/lib/supabaseServer";
 
-export default async function StatsCards() {
+export default async function StatsCards({ teamId }: { teamId: string }) {
   const supabase = await createClient();
 
-  const { data: tasks } = await supabase.from("tasks").select("*");
-  const { data: users } = await supabase.from("users").select("*");
-  const { data: files } = await supabase.from("files").select("*");
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("id, status, team_id")
+    .eq("team_id", teamId);
+  const { data: teamMembers } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("team_id", teamId);
+  const { data: files } = await supabase
+    .from("files")
+    .select("id, team_id")
+    .eq("team_id", teamId);
 
   const totalTasks = tasks?.length ?? 0;
   const completedTasks = tasks?.filter((t) => t.status === "done").length ?? 0;
@@ -29,7 +38,7 @@ export default async function StatsCards() {
     },
     {
       title: "Takım Üyeleri",
-      value: users?.length ?? 0,
+      value: teamMembers?.length ?? 0,
       change: "+2",
       icon: Users,
       color: "text-purple-600",
