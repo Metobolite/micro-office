@@ -3,9 +3,9 @@ export type TaskStatus = "todo" | "doing" | "done";
 export interface Task {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   status: TaskStatus;
-  assignedTo?: string;
-  createdAt: string;
-  dueDate?: string;
+  priority: "low" | "medium" | "high";
+  sort_order: number;
+  due_date?: string | null;
 }
