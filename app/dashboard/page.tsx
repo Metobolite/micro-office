@@ -26,11 +26,15 @@ export default async function DashboardPage({
   }
 
   const requestedTeamId = getTeamIdFromSearchParams(searchParams);
-  const { activeTeamId, activeTeam } = await getTeamContext(
+  const { activeTeamId, activeTeam, isRequestedTeamIdValid } = await getTeamContext(
     supabase,
     user.id,
     requestedTeamId,
   );
+
+  if (requestedTeamId && !isRequestedTeamIdValid) {
+    redirect("/teams");
+  }
 
   if (!activeTeamId) {
     return <CreateTeamForm userId={user.id} />;

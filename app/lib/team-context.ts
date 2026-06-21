@@ -24,6 +24,7 @@ export type TeamContext = {
 	teamIds: string[];
 	activeTeamId: string | null;
 	activeTeam: TeamRecord | null;
+	isRequestedTeamIdValid: boolean;
 };
 
 export function getTeamIdFromSearchParams(
@@ -61,8 +62,10 @@ export async function getTeamContext(
 		: { data: [] as TeamRecord[] };
 
 	const teamsById = new Map((teams || []).map((team) => [team.id, team]));
+	const isRequestedTeamIdValid =
+		requestedTeamId != null ? teamsById.has(requestedTeamId) : false;
 	const activeTeamId =
-		requestedTeamId && teamsById.has(requestedTeamId)
+		isRequestedTeamIdValid && requestedTeamId
 			? requestedTeamId
 			: teamIds[0] ?? null;
 
@@ -72,5 +75,6 @@ export async function getTeamContext(
 		teamIds,
 		activeTeamId,
 		activeTeam: activeTeamId ? teamsById.get(activeTeamId) ?? null : null,
+		isRequestedTeamIdValid,
 	};
 }

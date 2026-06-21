@@ -24,14 +24,20 @@ export default async function Page({
     redirect("/auth/login");
   }
 
-  const { activeTeamId } = await getTeamContext(
+  const requestedTeamId = getTeamIdFromSearchParams(searchParams);
+
+  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
     supabase,
     user.id,
-    getTeamIdFromSearchParams(searchParams),
+    requestedTeamId,
   );
 
+  if (requestedTeamId && !isRequestedTeamIdValid) {
+    redirect("/teams");
+  }
+
   if (!activeTeamId) {
-    redirect("/create-team");
+    redirect("/teams");
   }
 
   return (
