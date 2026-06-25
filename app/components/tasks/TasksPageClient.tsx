@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import AddTaskForm from "./AddTaskForm";
 import Modal from "@/components/ui/modal";
@@ -13,19 +13,20 @@ import { toast } from "sonner";
 export default function TasksPageClient({
   userId,
   teamId,
+  initialTasks,
 }: {
   userId: string;
   teamId: string;
+  initialTasks: Task[];
 }) {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editPriority, setEditPriority] = useState<"low" | "medium" | "high">(
-    "medium"
+    "medium",
   );
   const [editDueDate, setEditDueDate] = useState("");
   const [editDueTime, setEditDueTime] = useState("");
@@ -47,7 +48,6 @@ export default function TasksPageClient({
   const today = new Date().toISOString().split("T")[0];
 
   const fetchTasks = async () => {
-    setLoading(true);
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
@@ -61,12 +61,7 @@ export default function TasksPageClient({
     } else {
       setTasks(data || []);
     }
-    setLoading(false);
   };
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
 
   const deleteTask = async (taskId: string) => {
     const { error } = await supabase
@@ -99,7 +94,7 @@ export default function TasksPageClient({
     setEditDescription(task.description);
     setEditPriority(task.priority);
     setEditDueDate(
-      task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : ""
+      task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : "",
     );
     setEditDueTime(task.due_date ? task.due_date.slice(11, 16) : "");
   };
@@ -154,8 +149,8 @@ export default function TasksPageClient({
                 priority: editPriority,
                 due_date: editDueDate ? fullDate : null,
               }
-            : task
-        )
+            : task,
+        ),
       );
       toast.success("Görev başarıyla güncellendi!");
       cancelEdit();
@@ -183,7 +178,7 @@ export default function TasksPageClient({
           : {
               ...t,
               sort_order: tasksInColumn.findIndex((x) => x.id === t.id),
-            }
+            },
       );
 
       setTasks(updatedTasks);
@@ -265,8 +260,11 @@ export default function TasksPageClient({
   return (
     <>
       <div className="p-6 min-h-screen text-white relative">
-        <div className="">
-          <Button onClick={() => setShowAddModal(true)} className=" ">
+        <div className="mb-4 flex items-center justify-end">
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="h-11 rounded-full bg-white px-5 font-semibold text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.12)] transition hover:bg-slate-100"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Yeni Görev
           </Button>
@@ -277,7 +275,7 @@ export default function TasksPageClient({
             {["todo", "in_progress", "done"].map((status) => (
               <div
                 key={status}
-                className="flex flex-col bg-[#BCCCDC] p-4 rounded-md min-h-[300px] shadow-md text-card-foreground"
+                className="flex flex-col bg-[#BCCCDC] p-4 rounded-2xl min-h-[300px] shadow-md text-card-foreground"
               >
                 <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
                   {status.replace("_", " ")}{" "}
@@ -303,68 +301,108 @@ export default function TasksPageClient({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="bg-[#F9F3EF] text-[#1B3C53] min-h-[80px] p-4 mb-3 rounded shadow relative"
+                              className="bg-[#F9F3EF] text-[#1B3C53] min-h-[80px] p-4 mb-3 rounded-2xl border border-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.08)] relative"
                             >
                               {editingTask?.id === task.id ? (
-                                <div className="transition-all duration-300 ease-in-out">
-                                  <input
-                                    className="w-full mb-2 p-1 border border-gray-300 rounded"
-                                    value={editTitle}
-                                    onChange={(e) =>
-                                      setEditTitle(e.target.value)
-                                    }
-                                  />
-                                  <textarea
-                                    className="w-full p-1 border border-gray-300 rounded"
-                                    value={editDescription}
-                                    onChange={(e) =>
-                                      setEditDescription(e.target.value)
-                                    }
-                                  />
-                                  <select
-                                    className="w-full p-1 border border-gray-300 rounded mb-2"
-                                    value={editPriority}
-                                    onChange={(e) =>
-                                      setEditPriority(
-                                        e.target.value as
-                                          | "low"
-                                          | "medium"
-                                          | "high"
-                                      )
-                                    }
-                                  >
-                                    <option value="low">Düşük</option>
-                                    <option value="medium">Orta</option>
-                                    <option value="high">Yüksek</option>
-                                  </select>
-                                  <input
-                                    type="date"
-                                    className="w-full p-2 border border-gray-300 rounded text-black mb-2"
-                                    value={editDueDate}
-                                    onChange={(e) =>
-                                      setEditDueDate(e.target.value)
-                                    }
-                                    min={today}
-                                  />
-                                  <input
-                                    type="time"
-                                    className="w-full p-2 border border-gray-300 rounded text-black mb-2"
-                                    value={editDueTime}
-                                    onChange={(e) =>
-                                      setEditDueTime(e.target.value)
-                                    }
-                                  />
+                                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/95 p-4 text-slate-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-300 ease-in-out backdrop-blur-sm">
+                                  <div className="space-y-1">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                      Görevi Düzenle
+                                    </p>
+                                    <h3 className="text-lg font-semibold text-slate-900">
+                                      Bilgileri güncelle
+                                    </h3>
+                                  </div>
 
-                                  <div className="flex gap-2 justify-end">
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">
+                                      Başlık
+                                    </label>
+                                    <input
+                                      className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                      value={editTitle}
+                                      onChange={(e) =>
+                                        setEditTitle(e.target.value)
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">
+                                      Açıklama
+                                    </label>
+                                    <textarea
+                                      className="min-h-[110px] w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                      value={editDescription}
+                                      onChange={(e) =>
+                                        setEditDescription(e.target.value)
+                                      }
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-slate-700">
+                                      Öncelik
+                                    </label>
+                                    <select
+                                      className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                      value={editPriority}
+                                      onChange={(e) =>
+                                        setEditPriority(
+                                          e.target.value as
+                                            | "low"
+                                            | "medium"
+                                            | "high",
+                                        )
+                                      }
+                                    >
+                                      <option value="low">Düşük</option>
+                                      <option value="medium">Orta</option>
+                                      <option value="high">Yüksek</option>
+                                    </select>
+                                  </div>
+
+                                  <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium text-slate-700">
+                                        Son Tarih
+                                      </label>
+                                      <input
+                                        type="date"
+                                        className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                        value={editDueDate}
+                                        onChange={(e) =>
+                                          setEditDueDate(e.target.value)
+                                        }
+                                        min={today}
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <label className="text-sm font-medium text-slate-700">
+                                        Saat
+                                      </label>
+                                      <input
+                                        type="time"
+                                        className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                        value={editDueTime}
+                                        onChange={(e) =>
+                                          setEditDueTime(e.target.value)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap justify-end gap-2 pt-1">
                                     <button
                                       onClick={saveEdit}
-                                      className="bg-green-600 px-3 py-1 rounded text-white"
+                                      className="h-11 rounded-full bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
                                     >
                                       Kaydet
                                     </button>
                                     <button
                                       onClick={cancelEdit}
-                                      className="bg-gray-400 px-3 py-1 rounded"
+                                      className="h-11 rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                     >
                                       İptal
                                     </button>
@@ -378,7 +416,7 @@ export default function TasksPageClient({
                                     </h3>
                                     <span
                                       className={`text-xs px-2 py-1 rounded absolute bottom-2 right-2 ${getPriorityBadgeColor(
-                                        task.priority
+                                        task.priority,
                                       )}`}
                                     >
                                       {task.priority}
