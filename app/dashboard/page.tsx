@@ -7,12 +7,16 @@ import { RecentMessages } from "@/app/components/dashboard/recent-messages";
 import { RecentFiles } from "@/app/components/dashboard/recent-files";
 import { redirect } from "next/navigation";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
-import { getTeamContext, getTeamIdFromSearchParams } from "../lib/team-context";
+import {
+  getTeamContext,
+  getTeamIdFromSearchParams,
+  type TeamSearchParams,
+} from "../lib/team-context";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: { teamId?: string | string[] };
+  searchParams?: Promise<TeamSearchParams>;
 }) {
   const supabase = await createClient();
 
@@ -25,12 +29,10 @@ export default async function DashboardPage({
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(searchParams);
-  const { activeTeamId, activeTeam, isRequestedTeamIdValid } = await getTeamContext(
-    supabase,
-    user.id,
-    requestedTeamId,
-  );
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
+  const { activeTeamId, activeTeam, isRequestedTeamIdValid } =
+    await getTeamContext(supabase, user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");

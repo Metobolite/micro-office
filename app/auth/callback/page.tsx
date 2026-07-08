@@ -22,7 +22,7 @@ export default function AuthCallback() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen text-white bg-black">
+    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
       <p>Yönlendiriliyorsunuz...</p>
     </div>
   );

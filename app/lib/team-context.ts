@@ -27,9 +27,11 @@ export type TeamContext = {
 	isRequestedTeamIdValid: boolean;
 };
 
-export function getTeamIdFromSearchParams(
-	searchParams?: { teamId?: string | string[] }
-) {
+export type TeamSearchParams = {
+	teamId?: string | string[];
+};
+
+export function getTeamIdFromSearchParams(searchParams?: TeamSearchParams) {
 	const teamId = searchParams?.teamId;
 
 	if (Array.isArray(teamId)) {

@@ -33,13 +33,13 @@ export function DeleteConfirmationDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Dosyayı silmek istiyor musunuz?</AlertDialogTitle>
           <AlertDialogDescription>
-            "{file.name}" kalıcı olarak silinecek. Bu işlem geri alınamaz.
+            &quot;{file.name}&quot; kalıcı olarak silinecek. Bu işlem geri alınamaz.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>İptal</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-destructive text-white hover:bg-destructive/90"
             onClick={() => onConfirm(file)}
           >
             Sil

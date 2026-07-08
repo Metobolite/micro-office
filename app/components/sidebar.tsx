@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "../../components/ui/sidebar";
+import { ThemeToggle } from "./theme";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -81,14 +82,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b p-4">
+      <SidebarHeader className="border-b p-4 bg-accent">
         <div className="flex items-center justify-between">
           <Link href="/teams" className="text-lg font-semibold">
             Micro Office
           </Link>
+          <ThemeToggle className="size-8" />
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-accent">
         {navigation.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>

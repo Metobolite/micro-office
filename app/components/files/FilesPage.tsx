@@ -45,6 +45,16 @@ const getFileIcon = (type: string) => {
 
 const categories = ["Tümü", "pdf", "image", "document", "video"];
 
+type FileRow = {
+  id: string;
+  name: string;
+  type: FileItem["type"] | null;
+  size: string | null;
+  uploaded_at: string | null;
+  created_at: string | null;
+  path: string;
+};
+
 export function FilesPage({
   userId,
   userName,
@@ -75,8 +85,10 @@ export function FilesPage({
     }
     if (!data) return;
 
+    const fileRows = data as FileRow[];
+
     const filesWithUrl = await Promise.all(
-      data.map(async (file: any) => {
+      fileRows.map(async (file) => {
         const { data: urlData, error: urlError } = await supabase.storage
           .from("user-files")
           .createSignedUrl(file.path, 3660);
@@ -88,10 +100,10 @@ export function FilesPage({
         return {
           id: file.id,
           name: file.name,
-          type: file.type,
-          size: file.size,
+          type: file.type || "other",
+          size: file.size || "0 B",
           modified: new Date(
-            file.uploaded_at || file.created_at
+            file.uploaded_at || file.created_at || Date.now()
           ).toLocaleString("tr-TR"),
           owner: {
             name: userName,

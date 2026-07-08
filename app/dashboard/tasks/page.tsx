@@ -3,15 +3,17 @@ import TasksPageClient from "../../components/tasks/TasksPageClient";
 import { createClient } from "../../lib/supabaseServer";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { Task } from "@/app/types/task";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
+  type TeamSearchParams,
 } from "@/app/lib/team-context";
 
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams?: { teamId?: string | string[] };
+  searchParams?: Promise<TeamSearchParams>;
 }) {
   const supabase = await createClient();
 
@@ -24,7 +26,8 @@ export default async function TasksPage({
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(searchParams);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
 
   const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
     supabase,
@@ -40,6 +43,14 @@ export default async function TasksPage({
     redirect("/teams");
   }
 
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("team_id", activeTeamId)
+    .order("status", { ascending: true })
+    .order("sort_order", { ascending: true });
+
   return (
     <div>
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -49,7 +60,11 @@ export default async function TasksPage({
           <h1 className="text-xl font-semibold">Görevler</h1>
         </div>
       </header>
-      <TasksPageClient userId={user.id} teamId={activeTeamId} />
+      <TasksPageClient
+        userId={user.id}
+        teamId={activeTeamId}
+        initialTasks={(tasks as Task[]) ?? []}
+      />
     </div>
   );
 }

@@ -1,11 +1,12 @@
-import { redirect } from "next/navigation";
+import { ThemeToggle } from "@/app/components/theme";
+import CreateTeamForm from "@/app/components/team/CreateTeamForm";
 import { createClient } from "@/app/lib/supabaseServer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Users } from "lucide-react";
-import CreateTeamForm from "@/app/components/team/CreateTeamForm";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 type TeamRow = {
   id: string;
@@ -91,33 +92,36 @@ export default async function TeamsPage() {
     .filter((item): item is TeamListItem => item !== null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+        <div className="flex flex-col gap-6 rounded-3xl border bg-card p-6 text-card-foreground shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <Badge variant="secondary" className="w-fit">
                 Proje Ekipleri
               </Badge>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                 Senin ekiplerin
               </h1>
             </div>
 
-            <div>
-              <Link
-                href="/teams/new"
-                className="inline-flex items-center gap-2 mb-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-              >
-                <Plus className="h-5 w-5 text-white" />
-                <span className="text-white">Yeni ekip oluştur</span>
-              </Link>
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3 md:justify-end">
+                <Link
+                  href="/teams/new"
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground! transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Yeni ekip oluştur</span>
+                </Link>
+                <ThemeToggle />
+              </div>
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                  <span className="block text-xs uppercase tracking-wide text-slate-500">
+                <div className="rounded-2xl border bg-muted px-4 py-3 text-sm text-muted-foreground">
+                  <span className="block text-xs uppercase tracking-wide">
                     Toplam proje
                   </span>
-                  <span className="mt-1 block text-2xl font-semibold text-slate-900">
+                  <span className="mt-1 block text-2xl font-semibold text-foreground">
                     {teamList.length}
                   </span>
                 </div>
@@ -129,12 +133,12 @@ export default async function TeamsPage() {
 
           {teamList.length === 0 ? (
             <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-8">
-                <div className="flex items-center gap-3 text-slate-900">
+              <div className="rounded-3xl border border-dashed bg-muted p-8">
+                <div className="flex items-center gap-3 text-foreground">
                   <Users className="h-5 w-5" />
                   <h2 className="text-xl font-semibold">Henüz ekip yok</h2>
                 </div>
-                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
+                <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                   Bu kullanıcıya bağlı bir proje bulunmuyor. İlk projeyi
                   oluşturduğunda ya da bir projeye eklendiğinde ekipler burada
                   listelenecek.
@@ -150,16 +154,13 @@ export default async function TeamsPage() {
                   href={`/dashboard?teamId=${team.id}`}
                   key={`${team.id}-${team.team_id}`}
                 >
-                  <Card
-                    key={`${team.id}-${team.team_id}`}
-                    className="overflow-hidden border-slate-200 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    <CardHeader className="space-y-4 bg-slate-950 text-white">
+                  <Card className="overflow-hidden border-border shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    <CardHeader className="space-y-4 bg-primary text-primary-foreground">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
                           <Badge
                             variant="secondary"
-                            className="w-fit text-slate-950 uppercase"
+                            className="w-fit uppercase"
                           >
                             {team.role || "member"}
                           </Badge>
@@ -172,22 +173,28 @@ export default async function TeamsPage() {
 
                     <CardContent className="space-y-4 p-6">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-slate-500">Durum</span>
+                        <span className="text-sm text-muted-foreground">
+                          Durum
+                        </span>
                         <Badge variant={getStatusVariant(team.statusLabel)}>
                           {team.statusLabel}
                         </Badge>
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-slate-500">Katılım</span>
-                        <span className="text-sm font-medium text-slate-900">
+                        <span className="text-sm text-muted-foreground">
+                          Katılım
+                        </span>
+                        <span className="text-sm font-medium text-foreground">
                           {team.joinedLabel}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-sm text-slate-500">Proje ID</span>
-                        <span className="max-w-[200px] truncate text-sm font-medium text-slate-900">
+                        <span className="text-sm text-muted-foreground">
+                          Proje ID
+                        </span>
+                        <span className="max-w-[200px] truncate text-sm font-medium text-foreground">
                           {team.team_id}
                         </span>
                       </div>
