@@ -62,26 +62,26 @@ export default function TaskEditor({
   };
 
   return (
-    <div className="p-4 border rounded bg-white shadow space-y-3">
+    <div className="space-y-3 rounded border bg-card p-4 text-card-foreground shadow">
       <input
         type="text"
         value={editTitle}
         onChange={(e) => setEditTitle(e.target.value)}
         placeholder="Başlık"
-        className="w-full p-2 border rounded"
+        className="w-full rounded border border-input bg-background p-2 text-foreground"
       />
       <textarea
         value={editDescription}
         onChange={(e) => setEditDescription(e.target.value)}
         placeholder="Açıklama"
-        className="w-full p-2 border rounded"
+        className="w-full rounded border border-input bg-background p-2 text-foreground"
       />
       <select
         value={editPriority}
         onChange={(e) =>
           setEditPriority(e.target.value as "low" | "medium" | "high")
         }
-        className="w-full p-2 border rounded"
+        className="w-full rounded border border-input bg-background p-2 text-foreground"
       >
         <option value="low">Düşük Öncelik</option>
         <option value="medium">Orta Öncelik</option>
@@ -91,27 +91,27 @@ export default function TaskEditor({
         type="date"
         value={editDueDate}
         onChange={(e) => setEditDueDate(e.target.value)}
-        className="w-full p-2 border rounded"
+        className="w-full rounded border border-input bg-background p-2 text-foreground"
       />
       {editDueDate && (
         <input
           type="time"
           value={editDueTime}
           onChange={(e) => setEditDueTime(e.target.value)}
-          className="w-full p-2 border rounded"
+          className="w-full rounded border border-input bg-background p-2 text-foreground"
         />
       )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button
           onClick={onCancel}
-          className="px-4 py-2 rounded border border-gray-400 text-gray-600"
+          className="rounded border bg-background px-4 py-2 text-foreground transition hover:bg-accent hover:text-accent-foreground"
         >
           İptal
         </button>
         <button
           onClick={handleSave}
-          className="px-4 py-2 rounded bg-blue-600 text-white"
+          className="rounded bg-primary px-4 py-2 text-primary-foreground transition hover:bg-primary/90"
         >
           Kaydet
         </button>

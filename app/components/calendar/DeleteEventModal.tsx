@@ -42,14 +42,14 @@ export default function DeleteEventModal({
         <DialogTitle>Etkinliği silmek istiyor musunuz?</DialogTitle>
         <div className="flex justify-end gap-2 mt-4">
           <DialogTrigger asChild>
-            <Button variant="secondary" className="hover:bg-[#e6e6e6]">
+            <Button variant="secondary">
               İptal
             </Button>
           </DialogTrigger>
           <Button
             onClick={handleDelete}
             variant="destructive"
-            className="hover:bg-[#D32F2F]"
+            className="hover:bg-destructive/90"
           >
             Evet, Sil
           </Button>

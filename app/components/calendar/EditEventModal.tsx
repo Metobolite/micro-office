@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import type { EventType } from "@/app/types/EventType";
 
 export default function EditEventModal({
   event,
@@ -20,18 +21,18 @@ export default function EditEventModal({
   teamId,
   userId,
 }: {
-  event: any;
+  event: EventType;
   onEventUpdated: () => void;
   teamId: string;
   userId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(event.title);
-  const [description, setDescription] = useState(event.description);
+  const [description, setDescription] = useState(event.description ?? "");
   const [type, setType] = useState(event.type);
   const [date, setDate] = useState(event.date);
-  const [time, setTime] = useState(event.time);
-  const [duration, setDuration] = useState(event.duration);
+  const [time, setTime] = useState(event.time ?? "");
+  const [duration, setDuration] = useState(event.duration ?? "");
 
   const handleUpdate = async () => {
     const { error } = await supabase
@@ -83,7 +84,7 @@ export default function EditEventModal({
           <select
             className="w-full p-2 border rounded"
             value={type}
-            onChange={(e) => setType(e.target.value)}
+            onChange={(e) => setType(e.target.value as EventType["type"])}
           >
             <option value="meeting">Toplantı</option>
             <option value="review">İnceleme</option>

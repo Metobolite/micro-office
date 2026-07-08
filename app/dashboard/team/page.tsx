@@ -67,7 +67,7 @@ export default async function TeamPage() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-gray-600">
+              <div className="text-2xl font-bold text-muted-foreground">
                 {teamMembers.filter((m) => m.status === "offline").length}
               </div>
               <p className="text-sm text-muted-foreground">Çevrimdışı</p>

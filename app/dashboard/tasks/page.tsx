@@ -7,12 +7,13 @@ import { Task } from "@/app/types/task";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
+  type TeamSearchParams,
 } from "@/app/lib/team-context";
 
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams?: { teamId?: string | string[] };
+  searchParams?: Promise<TeamSearchParams>;
 }) {
   const supabase = await createClient();
 
@@ -25,7 +26,8 @@ export default async function TasksPage({
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(searchParams);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
 
   const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
     supabase,

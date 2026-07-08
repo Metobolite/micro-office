@@ -1,6 +1,6 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/app/components/sidebar";
-import { Toaster } from "sonner";
+import { AppToaster } from "@/app/components/theme";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabaseServer";
 
@@ -31,10 +31,10 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <Toaster position="top-right" richColors />
+      <AppToaster />
       <div className="flex min-h-screen w-full">
         {hasTeam && <AppSidebar />}
-        <main className="flex-1 overflow-hidden">{children}</main>
+        <main className="flex-1 overflow-hidden bg-accent">{children}</main>
       </div>
     </SidebarProvider>
   );

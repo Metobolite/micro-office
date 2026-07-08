@@ -13,6 +13,14 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,12 +33,6 @@ a {
 
 h1 {
   font-family: 'Geist', sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
 }
 
 @keyframes slideInRight {
@@ -175,6 +177,6 @@ h1 {
   }
 }
 
-::-webkit-calendar-picker-indicator {
+.dark ::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }

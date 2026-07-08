@@ -68,30 +68,30 @@ export default function AddTaskForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-5 rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur-sm"
+      className="space-y-5 rounded-2xl border bg-card p-5 text-card-foreground shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
     >
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700">Başlık</Label>
+        <Label className="text-sm font-medium text-foreground">Başlık</Label>
         <Input
-          className="h-11 border-slate-300 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-slate-900/15"
+          className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700">Açıklama</Label>
+        <Label className="text-sm font-medium text-foreground">Açıklama</Label>
         <Textarea
-          className="min-h-[110px] border-slate-300 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-slate-900/15"
+          className="min-h-[110px] border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-slate-700">Öncelik</Label>
+        <Label className="text-sm font-medium text-foreground">Öncelik</Label>
         <select
-          className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
         >
@@ -103,12 +103,12 @@ export default function AddTaskForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-slate-700">
+          <Label className="text-sm font-medium text-foreground">
             Son Tarih (isteğe bağlı)
           </Label>
           <Input
             type="date"
-            className="h-11 border-slate-300 bg-slate-50 text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/15"
+            className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             min={today}
@@ -117,10 +117,10 @@ export default function AddTaskForm({
 
         {dueDate ? (
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-700">Saat</Label>
+            <Label className="text-sm font-medium text-foreground">Saat</Label>
             <Input
               type="time"
-              className="h-11 border-slate-300 bg-slate-50 text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-900/15"
+              className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
               value={dueTime}
               onChange={(e) => setDueTime(e.target.value)}
             />
@@ -132,7 +132,7 @@ export default function AddTaskForm({
 
       <Button
         type="submit"
-        className="h-11 w-full rounded-full bg-slate-900 text-white shadow-md transition hover:bg-slate-800"
+        className="h-11 w-full rounded-full shadow-md"
       >
         Görev Ekle
       </Button>

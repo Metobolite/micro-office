@@ -82,7 +82,7 @@ export async function RecentTasks({ teamId }: { teamId: string }) {
                       ? "bg-yellow-300 text-black"
                       : task.priority === "low"
                         ? "bg-green-500 text-white"
-                        : "bg-gray-400 text-white"
+                        : "bg-muted text-muted-foreground"
                 }
               >
                 {task.priority}

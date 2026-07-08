@@ -4,7 +4,12 @@ import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import AddTaskForm from "./AddTaskForm";
 import Modal from "@/components/ui/modal";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Task } from "@/app/types/task";
@@ -157,12 +162,12 @@ export default function TasksPageClient({
     }
   };
 
-  const handleDragEnd = async (result: any) => {
+  const handleDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
     if (!destination) return;
 
-    const sourceStatus = source.droppableId;
-    const destStatus = destination.droppableId;
+    const sourceStatus = source.droppableId as Task["status"];
+    const destStatus = destination.droppableId as Task["status"];
 
     if (sourceStatus === destStatus) {
       const tasksInColumn = tasks
@@ -253,17 +258,17 @@ export default function TasksPageClient({
       case "low":
         return "bg-green-600 text-white";
       default:
-        return "bg-gray-400 text-white";
+        return "bg-muted text-muted-foreground";
     }
   };
 
   return (
     <>
-      <div className="p-6 min-h-screen text-white relative">
+      <div className="relative min-h-screen p-6 text-foreground">
         <div className="mb-4 flex items-center justify-end">
           <Button
             onClick={() => setShowAddModal(true)}
-            className="h-11 rounded-full bg-white px-5 font-semibold text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.12)] transition hover:bg-slate-100"
+            className="h-11 rounded-full px-5 font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
           >
             <Plus className="h-4 w-4 mr-2" />
             Yeni Görev
@@ -275,11 +280,11 @@ export default function TasksPageClient({
             {["todo", "in_progress", "done"].map((status) => (
               <div
                 key={status}
-                className="flex flex-col bg-[#BCCCDC] p-4 rounded-2xl min-h-[300px] shadow-md text-card-foreground"
+                className="flex flex-col bg-card p-4 rounded-2xl min-h-[300px] shadow-md text-card-foreground"
               >
                 <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
                   {status.replace("_", " ")}{" "}
-                  <span className="ml-2 text-[#1B3C53] font-semibold bg-[#F9F3EF] px-2 rounded-lg">
+                  <span className="ml-2 rounded-lg bg-muted px-2 font-semibold text-muted-foreground">
                     {getTasksByStatus(status).length}
                   </span>
                 </h2>
@@ -301,25 +306,25 @@ export default function TasksPageClient({
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="bg-[#F9F3EF] text-[#1B3C53] min-h-[80px] p-4 mb-3 rounded-2xl border border-white/80 shadow-[0_10px_30px_rgba(15,23,42,0.08)] relative"
+                              className="relative mb-3 min-h-[80px] rounded-2xl border bg-background p-4 text-foreground shadow-[0_10px_30px_rgba(15,23,42,0.08)]"
                             >
                               {editingTask?.id === task.id ? (
-                                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/95 p-4 text-slate-900 shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-300 ease-in-out backdrop-blur-sm">
+                                <div className="space-y-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-300 ease-in-out">
                                   <div className="space-y-1">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                                       Görevi Düzenle
                                     </p>
-                                    <h3 className="text-lg font-semibold text-slate-900">
+                                    <h3 className="text-lg font-semibold text-foreground">
                                       Bilgileri güncelle
                                     </h3>
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">
+                                    <label className="text-sm font-medium text-foreground">
                                       Başlık
                                     </label>
                                     <input
-                                      className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                      className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
                                       value={editTitle}
                                       onChange={(e) =>
                                         setEditTitle(e.target.value)
@@ -328,11 +333,11 @@ export default function TasksPageClient({
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">
+                                    <label className="text-sm font-medium text-foreground">
                                       Açıklama
                                     </label>
                                     <textarea
-                                      className="min-h-[110px] w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                      className="min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
                                       value={editDescription}
                                       onChange={(e) =>
                                         setEditDescription(e.target.value)
@@ -341,11 +346,11 @@ export default function TasksPageClient({
                                   </div>
 
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700">
+                                    <label className="text-sm font-medium text-foreground">
                                       Öncelik
                                     </label>
                                     <select
-                                      className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                      className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
                                       value={editPriority}
                                       onChange={(e) =>
                                         setEditPriority(
@@ -364,12 +369,12 @@ export default function TasksPageClient({
 
                                   <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-2">
-                                      <label className="text-sm font-medium text-slate-700">
+                                      <label className="text-sm font-medium text-foreground">
                                         Son Tarih
                                       </label>
                                       <input
                                         type="date"
-                                        className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                        className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
                                         value={editDueDate}
                                         onChange={(e) =>
                                           setEditDueDate(e.target.value)
@@ -379,12 +384,12 @@ export default function TasksPageClient({
                                     </div>
 
                                     <div className="space-y-2">
-                                      <label className="text-sm font-medium text-slate-700">
+                                      <label className="text-sm font-medium text-foreground">
                                         Saat
                                       </label>
                                       <input
                                         type="time"
-                                        className="h-11 w-full rounded-md border border-slate-300 bg-slate-50 px-3 text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10"
+                                        className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
                                         value={editDueTime}
                                         onChange={(e) =>
                                           setEditDueTime(e.target.value)
@@ -396,13 +401,13 @@ export default function TasksPageClient({
                                   <div className="flex flex-wrap justify-end gap-2 pt-1">
                                     <button
                                       onClick={saveEdit}
-                                      className="h-11 rounded-full bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                      className="h-11 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
                                     >
                                       Kaydet
                                     </button>
                                     <button
                                       onClick={cancelEdit}
-                                      className="h-11 rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                      className="h-11 rounded-full border bg-background px-4 text-sm font-semibold text-foreground transition hover:bg-accent hover:text-accent-foreground"
                                     >
                                       İptal
                                     </button>
@@ -433,7 +438,7 @@ export default function TasksPageClient({
                                   <div className="absolute top-2 right-2 flex gap-1">
                                     <button
                                       onClick={() => startEdit(task)}
-                                      className="bg-[#09122C] px-2 py-1 rounded text-xs text-[#d5cbc4] font-semibold hover:bg-[#2b344d] transition duration-300"
+                                      className="rounded bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground transition duration-300 hover:bg-secondary/80"
                                       title="Düzenle"
                                     >
                                       Düzenle
@@ -443,7 +448,7 @@ export default function TasksPageClient({
                                         setTaskToDelete(task);
                                         setShowDeleteConfirm(true);
                                       }}
-                                      className="bg-[#BE3144] text-[#d5cbc4] px-2 py-1 rounded text-xs font-semibold hover:bg-[#DC2525] transition duration-300"
+                                      className="rounded bg-destructive px-2 py-1 text-xs font-semibold text-white transition duration-300 hover:bg-destructive/90"
                                       title="Sil"
                                     >
                                       Sil
@@ -477,21 +482,21 @@ export default function TasksPageClient({
       </Modal>
 
       {showDeleteConfirm && taskToDelete && (
-        <div className="fixed inset-0 flex items-center justify-center bg-[#00000070] z-50">
-          <div className="bg-white p-6 rounded shadow max-w-sm w-full text-black modal-overlay">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="modal-overlay w-full max-w-sm rounded border bg-card p-6 text-card-foreground shadow">
             <h3 className="text-xl font-semibold mb-4">
-              "{taskToDelete.title}" görevini silmek istediğinize emin misiniz?
+              &quot;{taskToDelete.title}&quot; görevini silmek istediğinize emin misiniz?
             </h3>
             <div className="flex justify-end gap-4">
               <button
                 onClick={confirmDelete}
-                className="bg-[#BE3144] text-[#ebe7e5] px-4 py-2 rounded text-sm font-semibold hover:bg-[#DC2525] transition duration-300"
+                className="rounded bg-destructive px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-destructive/90"
               >
                 Evet, Sil
               </button>
               <button
                 onClick={cancelDelete}
-                className="bg-[#1B3C53] px-4 py-2 rounded text-sm font-semibold text-[#ebe7e5] hover:bg-[#34699A] transition duration-300"
+                className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition duration-300 hover:bg-secondary/80"
               >
                 İptal
               </button>
