@@ -6,15 +6,53 @@ import { Mail, Phone, MapPin, MoreHorizontal } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { AddTeamMemberForm } from "@/app/components/team/AddTeamMemberForm";
+import { redirect } from "next/navigation";
+import {
+  getTeamContext,
+  getTeamIdFromSearchParams,
+  type TeamSearchParams,
+} from "@/app/lib/team-context";
 
-export default async function TeamPage() {
+export default async function TeamPage({
+  searchParams,
+}: {
+  searchParams?: Promise<TeamSearchParams>;
+}) {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (!user || error) {
+    redirect("/auth/login");
+  }
+
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
+
+  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
+    supabase,
+    user.id,
+    requestedTeamId,
+  );
+
+  if (requestedTeamId && !isRequestedTeamIdValid) {
+    redirect("/teams");
+  }
+
+  if (!activeTeamId) {
+    redirect("/teams");
+  }
 
   const { data } = await supabase
     .from("team_members")
     .select(
       "team_id, user_id, role, status, joined_at, name, email, phone, avatar_url"
-    );
+    )
+    .eq("team_id", activeTeamId)
+    .order("joined_at", { ascending: false });
 
   const teamMembers = (data || []).map((member) => ({
     ...member,
@@ -36,7 +74,7 @@ export default async function TeamPage() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-xl font-semibold">Takım</h1>
-          <AddTeamMemberForm />
+          <AddTeamMemberForm teamId={activeTeamId} />
         </div>
       </header>
 
@@ -79,7 +117,7 @@ export default async function TeamPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {teamMembers.map((member) => (
             <Card
-              key={member.user_id}
+              key={`${member.team_id}-${member.user_id ?? member.email}`}
               className="hover:shadow-md transition-shadow"
             >
               <CardHeader className="pb-4">

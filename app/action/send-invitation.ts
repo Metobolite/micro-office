@@ -2,23 +2,30 @@
 
 import { createClient } from "@/app/lib/supabaseServer";
 
-export async function sendInvitation(email: string) {
-  const supabase = await createClient();
-  const user = await supabase.auth.getUser();
-  const userId = user.data.user?.id;
+export async function sendInvitation(email: string, teamId: string) {
+  const trimmedEmail = email.trim();
 
-  const { data: teams } = await supabase
+  if (!trimmedEmail || !teamId) return;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const { data: memberships } = await supabase
     .from("team_members")
     .select("team_id")
-    .eq("user_id", userId)
+    .eq("user_id", user.id)
+    .eq("team_id", teamId)
     .limit(1);
 
-  const team_id = teams?.[0]?.team_id;
-  if (!team_id) return;
+  if (!memberships?.length) return;
 
   await supabase.from("team_members").insert({
-    team_id,
-    email,
+    team_id: teamId,
+    email: trimmedEmail,
     status: "invited",
     role: "member",
     joined_at: new Date().toISOString(),

@@ -11,16 +11,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sendInvitation } from "@/app/action/send-invitation";
+import { useRouter } from "next/navigation";
 
-export function AddTeamMemberForm() {
+export function AddTeamMemberForm({ teamId }: { teamId: string }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleInvite = async () => {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) return;
+
     setLoading(true);
-    await sendInvitation(email);
-    setEmail("");
-    setLoading(false);
+
+    try {
+      await sendInvitation(trimmedEmail, teamId);
+      setEmail("");
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,7 +51,7 @@ export function AddTeamMemberForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <Button onClick={handleInvite} disabled={loading}>
+          <Button onClick={handleInvite} disabled={loading || !email.trim()}>
             {loading ? "Gönderiliyor..." : "Davet Gönder"}
           </Button>
         </div>
