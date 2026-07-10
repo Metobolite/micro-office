@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/app/lib/supabaseServer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleString("tr-TR", {
+  return date.toLocaleString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -27,10 +27,12 @@ export async function RecentMessages({ teamId }: { teamId: string }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Son Görevler</CardTitle>
+          <CardTitle>Recent Messages</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Görevler yüklenemedi.</p>
+          <p className="text-sm text-muted-foreground">
+            Messages could not be loaded.
+          </p>
         </CardContent>
       </Card>
     );
@@ -39,7 +41,7 @@ export async function RecentMessages({ teamId }: { teamId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Son Mesajlar</CardTitle>
+        <CardTitle>Recent Messages</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {messages.map((message) => (

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function AddTaskForm({
@@ -29,7 +29,7 @@ export default function AddTaskForm({
     e.preventDefault();
 
     if (!title.trim()) {
-      toast.error("Başlık boş olamaz");
+      toast.error("Title cannot be empty.");
       return;
     }
 
@@ -53,7 +53,7 @@ export default function AddTaskForm({
     });
 
     if (!error) {
-      toast.success("Görev başarıyla eklendi");
+      toast.success("Task added successfully.");
       setTitle("");
       setDescription("");
       setPriority("medium");
@@ -61,7 +61,7 @@ export default function AddTaskForm({
       setDueTime("");
       onTaskAdded();
     } else {
-      toast.error("Görev eklenirken hata oluştu: " + error.message);
+      toast.error("Task could not be added: " + error.message);
     }
   };
 
@@ -71,7 +71,7 @@ export default function AddTaskForm({
       className="space-y-5 rounded-2xl border bg-card p-5 text-card-foreground shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
     >
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-foreground">Başlık</Label>
+        <Label className="text-sm font-medium text-foreground">Title</Label>
         <Input
           className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
           value={title}
@@ -80,7 +80,9 @@ export default function AddTaskForm({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-foreground">Açıklama</Label>
+        <Label className="text-sm font-medium text-foreground">
+          Description
+        </Label>
         <Textarea
           className="min-h-[110px] border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
           value={description}
@@ -89,22 +91,22 @@ export default function AddTaskForm({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium text-foreground">Öncelik</Label>
+        <Label className="text-sm font-medium text-foreground">Priority</Label>
         <select
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
         >
-          <option value="low">Düşük</option>
-          <option value="medium">Orta</option>
-          <option value="high">Yüksek</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
         </select>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-foreground">
-            Son Tarih (isteğe bağlı)
+            Due Date (optional)
           </Label>
           <Input
             type="date"
@@ -117,7 +119,7 @@ export default function AddTaskForm({
 
         {dueDate ? (
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-foreground">Saat</Label>
+            <Label className="text-sm font-medium text-foreground">Time</Label>
             <Input
               type="time"
               className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
@@ -130,11 +132,8 @@ export default function AddTaskForm({
         )}
       </div>
 
-      <Button
-        type="submit"
-        className="h-11 w-full rounded-full shadow-md"
-      >
-        Görev Ekle
+      <Button type="submit" className="h-11 w-full rounded-full shadow-md">
+        Add Task
       </Button>
     </form>
   );

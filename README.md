@@ -16,6 +16,20 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Email invitations
+
+Team invitations are sent through the Resend HTTP API. Add these values to
+`.env.local` before sending real invitation emails:
+
+```bash
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL="Micro Office <noreply@your-domain.com>"
+APP_URL=http://localhost:3000
+```
+
+Run `supabase/team-invitations.sql` in the Supabase SQL Editor to create the
+`team_invitations` table and its RLS policies.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

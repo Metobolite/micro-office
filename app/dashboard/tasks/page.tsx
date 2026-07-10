@@ -1,14 +1,14 @@
-import { redirect } from "next/navigation";
-import TasksPageClient from "../../components/tasks/TasksPageClient";
-import { createClient } from "../../lib/supabaseServer";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { Task } from "@/app/types/task";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
   type TeamSearchParams,
 } from "@/app/lib/team-context";
+import { Task } from "@/app/types/task";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { redirect } from "next/navigation";
+import TasksPageClient from "../../components/tasks/TasksPageClient";
+import { createClient } from "../../lib/supabaseServer";
 
 export default async function TasksPage({
   searchParams,
@@ -57,7 +57,7 @@ export default async function TasksPage({
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Görevler</h1>
+          <h1 className="text-xl font-semibold">Tasks</h1>
         </div>
       </header>
       <TasksPageClient

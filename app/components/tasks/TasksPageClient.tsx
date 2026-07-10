@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
-import AddTaskForm from "./AddTaskForm";
+import { Task } from "@/app/types/task";
+import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import {
   DragDropContext,
-  Droppable,
   Draggable,
+  Droppable,
   type DropResult,
 } from "@hello-pangea/dnd";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Task } from "@/app/types/task";
+import { useState } from "react";
 import { toast } from "sonner";
+import AddTaskForm from "./AddTaskForm";
+
+const statusLabels: Record<string, string> = {
+  todo: "To Do",
+  in_progress: "In Progress",
+  done: "Done",
+};
 
 export default function TasksPageClient({
   userId,
@@ -41,7 +47,7 @@ export default function TasksPageClient({
 
   function formatDate(dateString: string) {
     const date = new Date(dateString);
-    return date.toLocaleString("tr-TR", {
+    return date.toLocaleString("en-US", {
       day: "2-digit",
       month: "long",
       year: "numeric",
@@ -62,7 +68,7 @@ export default function TasksPageClient({
       .order("sort_order", { ascending: true });
 
     if (error) {
-      console.error("Hata:", error);
+      console.error("Error:", error);
     } else {
       setTasks(data || []);
     }
@@ -75,7 +81,7 @@ export default function TasksPageClient({
       .eq("id", taskId)
       .eq("team_id", teamId);
     if (error) {
-      alert("Görev silinirken hata oluştu: " + error.message);
+      alert("Task could not be deleted: " + error.message);
     } else {
       setTasks((prev) => prev.filter((task) => task.id !== taskId));
     }
@@ -117,16 +123,18 @@ export default function TasksPageClient({
     if (!editingTask) return;
 
     if (!editTitle.trim()) {
-      toast.error("Başlık boş olamaz!");
+      toast.error("Title cannot be empty.");
       return;
     }
 
-    const fullDate = editDueTime
-      ? `${editDueDate}T${editDueTime}:00`
-      : `${editDueDate}T00:00:00`;
+    const fullDate = editDueDate
+      ? editDueTime
+        ? `${editDueDate}T${editDueTime}:00`
+        : `${editDueDate}T00:00:00`
+      : null;
 
-    if (fullDate < today) {
-      toast.error("Tarih geçmiş olamaz!");
+    if (editDueDate && editDueDate < today) {
+      toast.error("Date cannot be in the past.");
       return;
     }
 
@@ -136,13 +144,13 @@ export default function TasksPageClient({
         title: editTitle,
         description: editDescription,
         priority: editPriority,
-        due_date: fullDate ? fullDate : null,
+        due_date: fullDate,
       })
       .eq("id", editingTask.id)
       .eq("team_id", teamId);
 
     if (error) {
-      toast.error("Görev güncellenirken hata oluştu: " + error.message);
+      toast.error("Task could not be updated: " + error.message);
     } else {
       setTasks((prev) =>
         prev.map((task) =>
@@ -152,12 +160,12 @@ export default function TasksPageClient({
                 title: editTitle,
                 description: editDescription,
                 priority: editPriority,
-                due_date: editDueDate ? fullDate : null,
+                due_date: fullDate,
               }
             : task,
         ),
       );
-      toast.success("Görev başarıyla güncellendi!");
+      toast.success("Task updated successfully.");
       cancelEdit();
     }
   };
@@ -271,7 +279,7 @@ export default function TasksPageClient({
             className="h-11 rounded-full px-5 font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Yeni Görev
+            New Task
           </Button>
         </div>
 
@@ -283,7 +291,7 @@ export default function TasksPageClient({
                 className="flex flex-col bg-card p-4 rounded-2xl min-h-[300px] shadow-md text-card-foreground"
               >
                 <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
-                  {status.replace("_", " ")}{" "}
+                  {statusLabels[status] ?? status.replace("_", " ")}{" "}
                   <span className="ml-2 rounded-lg bg-muted px-2 font-semibold text-muted-foreground">
                     {getTasksByStatus(status).length}
                   </span>
@@ -312,16 +320,16 @@ export default function TasksPageClient({
                                 <div className="space-y-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-300 ease-in-out">
                                   <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                                      Görevi Düzenle
+                                      Edit Task
                                     </p>
                                     <h3 className="text-lg font-semibold text-foreground">
-                                      Bilgileri güncelle
+                                      Update details
                                     </h3>
                                   </div>
 
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-foreground">
-                                      Başlık
+                                      Title
                                     </label>
                                     <input
                                       className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
@@ -334,7 +342,7 @@ export default function TasksPageClient({
 
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-foreground">
-                                      Açıklama
+                                      Description
                                     </label>
                                     <textarea
                                       className="min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
@@ -347,7 +355,7 @@ export default function TasksPageClient({
 
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium text-foreground">
-                                      Öncelik
+                                      Priority
                                     </label>
                                     <select
                                       className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
@@ -361,16 +369,16 @@ export default function TasksPageClient({
                                         )
                                       }
                                     >
-                                      <option value="low">Düşük</option>
-                                      <option value="medium">Orta</option>
-                                      <option value="high">Yüksek</option>
+                                      <option value="low">Low</option>
+                                      <option value="medium">Medium</option>
+                                      <option value="high">High</option>
                                     </select>
                                   </div>
 
                                   <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="space-y-2">
                                       <label className="text-sm font-medium text-foreground">
-                                        Son Tarih
+                                        Due Date
                                       </label>
                                       <input
                                         type="date"
@@ -385,7 +393,7 @@ export default function TasksPageClient({
 
                                     <div className="space-y-2">
                                       <label className="text-sm font-medium text-foreground">
-                                        Saat
+                                        Time
                                       </label>
                                       <input
                                         type="time"
@@ -403,13 +411,13 @@ export default function TasksPageClient({
                                       onClick={saveEdit}
                                       className="h-11 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
                                     >
-                                      Kaydet
+                                      Save
                                     </button>
                                     <button
                                       onClick={cancelEdit}
                                       className="h-11 rounded-full border bg-background px-4 text-sm font-semibold text-foreground transition hover:bg-accent hover:text-accent-foreground"
                                     >
-                                      İptal
+                                      Cancel
                                     </button>
                                   </div>
                                 </div>
@@ -432,16 +440,16 @@ export default function TasksPageClient({
                                   </p>
                                   <p className="text-xs mt-1">
                                     {!task.due_date || task.due_date === null
-                                      ? "Süresiz"
+                                      ? "No due date"
                                       : formatDate(task.due_date)}
                                   </p>
                                   <div className="absolute top-2 right-2 flex gap-1">
                                     <button
                                       onClick={() => startEdit(task)}
                                       className="rounded bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground transition duration-300 hover:bg-secondary/80"
-                                      title="Düzenle"
+                                      title="Edit"
                                     >
-                                      Düzenle
+                                      Edit
                                     </button>
                                     <button
                                       onClick={() => {
@@ -449,9 +457,9 @@ export default function TasksPageClient({
                                         setShowDeleteConfirm(true);
                                       }}
                                       className="rounded bg-destructive px-2 py-1 text-xs font-semibold text-white transition duration-300 hover:bg-destructive/90"
-                                      title="Sil"
+                                      title="Delete"
                                     >
-                                      Sil
+                                      Delete
                                     </button>
                                   </div>
                                 </div>
@@ -485,20 +493,20 @@ export default function TasksPageClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="modal-overlay w-full max-w-sm rounded border bg-card p-6 text-card-foreground shadow">
             <h3 className="text-xl font-semibold mb-4">
-              &quot;{taskToDelete.title}&quot; görevini silmek istediğinize emin misiniz?
+              Are you sure you want to delete &quot;{taskToDelete.title}&quot;?
             </h3>
             <div className="flex justify-end gap-4">
               <button
                 onClick={confirmDelete}
                 className="rounded bg-destructive px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-destructive/90"
               >
-                Evet, Sil
+                Yes, delete
               </button>
               <button
                 onClick={cancelDelete}
                 className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition duration-300 hover:bg-secondary/80"
               >
-                İptal
+                Cancel
               </button>
             </div>
           </div>

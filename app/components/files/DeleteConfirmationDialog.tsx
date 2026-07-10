@@ -1,16 +1,16 @@
 "use client";
 
+import { FileItem } from "@/app/types/file";
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileItem } from "@/app/types/file";
 
 interface DeleteConfirmationDialogProps {
   open: boolean;
@@ -31,18 +31,19 @@ export function DeleteConfirmationDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Dosyayı silmek istiyor musunuz?</AlertDialogTitle>
+          <AlertDialogTitle>Delete this file?</AlertDialogTitle>
           <AlertDialogDescription>
-            &quot;{file.name}&quot; kalıcı olarak silinecek. Bu işlem geri alınamaz.
+            &quot;{file.name}&quot; will be permanently deleted. This action
+            cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>İptal</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-white hover:bg-destructive/90"
             onClick={() => onConfirm(file)}
           >
-            Sil
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

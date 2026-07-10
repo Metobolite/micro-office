@@ -12,7 +12,7 @@ import { useTheme } from "./theme-provider";
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { isDark, toggleTheme } = useTheme();
-  const label = isDark ? "Açık moda geç" : "Gece moduna geç";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
   return (
     <Tooltip>
