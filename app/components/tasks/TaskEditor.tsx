@@ -1,10 +1,8 @@
 "use client";
 
-//şimdilik çalışmıyor
-
-import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { Task } from "@/app/types/task";
+import { useState } from "react";
 
 type TaskEditorProps = {
   task: Task;
@@ -19,20 +17,20 @@ export default function TaskEditor({
 }: TaskEditorProps) {
   const [editTitle, setEditTitle] = useState(task.title || "");
   const [editDescription, setEditDescription] = useState(
-    task.description || ""
+    task.description || "",
   );
   const [editPriority, setEditPriority] = useState(task.priority || "low");
 
   const [editDueDate, setEditDueDate] = useState(
-    task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : ""
+    task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : "",
   );
   const [editDueTime, setEditDueTime] = useState(
-    task.due_date ? new Date(task.due_date).toISOString().slice(11, 16) : ""
+    task.due_date ? new Date(task.due_date).toISOString().slice(11, 16) : "",
   );
 
   const handleSave = async () => {
     if (!editTitle) {
-      alert("Başlık zorunludur");
+      alert("Title is required.");
       return;
     }
 
@@ -55,7 +53,7 @@ export default function TaskEditor({
       .eq("id", task.id);
 
     if (error) {
-      alert("Hata: " + error.message);
+      alert("Error: " + error.message);
     } else {
       onSave();
     }
@@ -67,13 +65,13 @@ export default function TaskEditor({
         type="text"
         value={editTitle}
         onChange={(e) => setEditTitle(e.target.value)}
-        placeholder="Başlık"
+        placeholder="Title"
         className="w-full rounded border border-input bg-background p-2 text-foreground"
       />
       <textarea
         value={editDescription}
         onChange={(e) => setEditDescription(e.target.value)}
-        placeholder="Açıklama"
+        placeholder="Description"
         className="w-full rounded border border-input bg-background p-2 text-foreground"
       />
       <select
@@ -83,9 +81,9 @@ export default function TaskEditor({
         }
         className="w-full rounded border border-input bg-background p-2 text-foreground"
       >
-        <option value="low">Düşük Öncelik</option>
-        <option value="medium">Orta Öncelik</option>
-        <option value="high">Yüksek Öncelik</option>
+        <option value="low">Low Priority</option>
+        <option value="medium">Medium Priority</option>
+        <option value="high">High Priority</option>
       </select>
       <input
         type="date"
@@ -107,13 +105,13 @@ export default function TaskEditor({
           onClick={onCancel}
           className="rounded border bg-background px-4 py-2 text-foreground transition hover:bg-accent hover:text-accent-foreground"
         >
-          İptal
+          Cancel
         </button>
         <button
           onClick={handleSave}
           className="rounded bg-primary px-4 py-2 text-primary-foreground transition hover:bg-primary/90"
         >
-          Kaydet
+          Save
         </button>
       </div>
     </div>

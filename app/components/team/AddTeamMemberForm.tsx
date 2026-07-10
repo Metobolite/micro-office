@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { sendInvitation } from "@/app/action/send-invitation";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { sendInvitation } from "@/app/action/send-invitation";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export function AddTeamMemberForm({ teamId }: { teamId: string }) {
   const router = useRouter();
@@ -26,9 +27,23 @@ export function AddTeamMemberForm({ teamId }: { teamId: string }) {
     setLoading(true);
 
     try {
-      await sendInvitation(trimmedEmail, teamId);
-      setEmail("");
-      router.refresh();
+      const result = await sendInvitation(trimmedEmail, teamId);
+
+      if (result.success) {
+        toast.success(result.message);
+        setEmail("");
+        router.refresh();
+        return;
+      }
+
+      if ("inviteCreated" in result && result.inviteCreated) {
+        toast.warning(result.message);
+        setEmail("");
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
     } finally {
       setLoading(false);
     }
@@ -38,21 +53,21 @@ export function AddTeamMemberForm({ teamId }: { teamId: string }) {
     <Dialog>
       <DialogTrigger asChild>
         <Button>
-          <span className="mr-2">+</span> Üye Ekle
+          <span className="mr-2">+</span> Add Member
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Takıma Üye Ekle</DialogTitle>
+          <DialogTitle>Add Team Member</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <Input
-            placeholder="Üye e-posta adresi"
+            placeholder="Member email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <Button onClick={handleInvite} disabled={loading || !email.trim()}>
-            {loading ? "Gönderiliyor..." : "Davet Gönder"}
+            {loading ? "Sending..." : "Send Invitation"}
           </Button>
         </div>
       </DialogContent>

@@ -28,9 +28,9 @@ type TeamListItem = TeamRow &
   };
 
 function formatJoinedAt(joinedAt: string | null) {
-  if (!joinedAt) return "Belirsiz";
+  if (!joinedAt) return "Unknown";
 
-  return new Date(joinedAt).toLocaleDateString("tr-TR", {
+  return new Date(joinedAt).toLocaleDateString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -98,10 +98,10 @@ export default async function TeamsPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
               <Badge variant="secondary" className="w-fit">
-                Proje Ekipleri
+                Project Teams
               </Badge>
               <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                Senin ekiplerin
+                Your teams
               </h1>
             </div>
 
@@ -112,14 +112,14 @@ export default async function TeamsPage() {
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground! transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                 >
                   <Plus className="h-5 w-5" />
-                  <span>Yeni ekip oluştur</span>
+                  <span>Create new team</span>
                 </Link>
                 <ThemeToggle />
               </div>
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl border bg-muted px-4 py-3 text-sm text-muted-foreground">
                   <span className="block text-xs uppercase tracking-wide">
-                    Toplam proje
+                    Total projects
                   </span>
                   <span className="mt-1 block text-2xl font-semibold text-foreground">
                     {teamList.length}
@@ -136,12 +136,11 @@ export default async function TeamsPage() {
               <div className="rounded-3xl border border-dashed bg-muted p-8">
                 <div className="flex items-center gap-3 text-foreground">
                   <Users className="h-5 w-5" />
-                  <h2 className="text-xl font-semibold">Henüz ekip yok</h2>
+                  <h2 className="text-xl font-semibold">No teams yet</h2>
                 </div>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                  Bu kullanıcıya bağlı bir proje bulunmuyor. İlk projeyi
-                  oluşturduğunda ya da bir projeye eklendiğinde ekipler burada
-                  listelenecek.
+                  This user is not connected to any projects yet. Teams will
+                  appear here after you create your first project or join one.
                 </p>
               </div>
 
@@ -165,7 +164,7 @@ export default async function TeamsPage() {
                             {team.role || "member"}
                           </Badge>
                           <CardTitle className="text-2xl leading-tight uppercase">
-                            {team.name || "İsimsiz proje"}
+                            {team.name || "Untitled project"}
                           </CardTitle>
                         </div>
                       </div>
@@ -174,7 +173,7 @@ export default async function TeamsPage() {
                     <CardContent className="space-y-4 p-6">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm text-muted-foreground">
-                          Durum
+                          Status
                         </span>
                         <Badge variant={getStatusVariant(team.statusLabel)}>
                           {team.statusLabel}
@@ -183,7 +182,7 @@ export default async function TeamsPage() {
 
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm text-muted-foreground">
-                          Katılım
+                          Joined
                         </span>
                         <span className="text-sm font-medium text-foreground">
                           {team.joinedLabel}
@@ -192,7 +191,7 @@ export default async function TeamsPage() {
 
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm text-muted-foreground">
-                          Proje ID
+                          Project ID
                         </span>
                         <span className="max-w-[200px] truncate text-sm font-medium text-foreground">
                           {team.team_id}

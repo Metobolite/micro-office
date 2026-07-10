@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, ImageIcon, File } from "lucide-react";
 import { createClient } from "@/app/lib/supabaseServer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { File, FileText, ImageIcon } from "lucide-react";
 
 const getFileIcon = (type: string) => {
   switch (type) {
@@ -15,7 +15,7 @@ const getFileIcon = (type: string) => {
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleString("tr-TR", {
+  return date.toLocaleString("en-US", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -38,10 +38,12 @@ export async function RecentFiles({ teamId }: { teamId: string }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Son Görevler</CardTitle>
+          <CardTitle>Recent Files</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Görevler yüklenemedi.</p>
+          <p className="text-sm text-muted-foreground">
+            Files could not be loaded.
+          </p>
         </CardContent>
       </Card>
     );
@@ -49,7 +51,7 @@ export async function RecentFiles({ teamId }: { teamId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Son Dosyalar</CardTitle>
+        <CardTitle>Recent Files</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

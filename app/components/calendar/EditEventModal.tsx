@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
+import type { EventType } from "@/app/types/EventType";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 import { toast } from "sonner";
-import type { EventType } from "@/app/types/EventType";
 
 export default function EditEventModal({
   event,
@@ -50,10 +50,10 @@ export default function EditEventModal({
       .eq("user_id", userId);
 
     if (error) {
-      toast.error("Etkinlik güncellenemedi.");
+      toast.error("Event could not be updated.");
       console.error(error);
     } else {
-      toast.success("Etkinlik güncellendi!");
+      toast.success("Event updated.");
       onEventUpdated();
       setOpen(false);
     }
@@ -63,37 +63,37 @@ export default function EditEventModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
-          Düzenle
+          Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="space-y-2">
-        <DialogTitle>Etkinliği Düzenle</DialogTitle>
+        <DialogTitle>Edit Event</DialogTitle>
         <div>
-          <Label className="mb-2">Başlık</Label>
+          <Label className="mb-2">Title</Label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div>
-          <Label className="mb-2">Açıklama</Label>
+          <Label className="mb-2">Description</Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
         <div>
-          <Label className="mb-2">Tür</Label>
+          <Label className="mb-2">Type</Label>
           <select
             className="w-full p-2 border rounded"
             value={type}
             onChange={(e) => setType(e.target.value as EventType["type"])}
           >
-            <option value="meeting">Toplantı</option>
-            <option value="review">İnceleme</option>
-            <option value="presentation">Sunum</option>
-            <option value="planning">Planlama</option>
+            <option value="meeting">Meeting</option>
+            <option value="review">Review</option>
+            <option value="presentation">Presentation</option>
+            <option value="planning">Planning</option>
           </select>
         </div>
         <div>
-          <Label className="mb-2">Tarih</Label>
+          <Label className="mb-2">Date</Label>
           <Input
             type="date"
             value={date}
@@ -101,7 +101,7 @@ export default function EditEventModal({
           />
         </div>
         <div>
-          <Label className="mb-2">Saat</Label>
+          <Label className="mb-2">Time</Label>
           <Input
             type="time"
             value={time}
@@ -109,7 +109,7 @@ export default function EditEventModal({
           />
         </div>
         <div>
-          <Label className="mb-2">Süre</Label>
+          <Label className="mb-2">Duration</Label>
           <Input
             type="text"
             placeholder="01:00"
@@ -118,7 +118,7 @@ export default function EditEventModal({
           />
         </div>
         <Button onClick={handleUpdate} className="w-full">
-          Kaydet
+          Save
         </Button>
       </DialogContent>
     </Dialog>

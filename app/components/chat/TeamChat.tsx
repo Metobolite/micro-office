@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/app/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Send, Smile } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { formatDistanceToNow } from "date-fns";
-import { tr } from "date-fns/locale/tr";
+import { Paperclip, Send, Smile } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface Message {
   id: string;
@@ -45,7 +44,7 @@ export default function TeamChat({
         .eq("team_id", teamId)
         .order("inserted_at", { ascending: true });
 
-      if (error) console.error("Mesajlar alınamadı:", error);
+      if (error) console.error("Messages could not be loaded:", error);
       else setMessages(data as Message[]);
     };
 
@@ -58,16 +57,15 @@ export default function TeamChat({
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
           setMessages((prev) => [...prev, payload.new as Message]);
-        }
+        },
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [supabase]);
+  }, [teamId]);
 
-  // Handle sending message
   const handleSend = async () => {
     if (!newMessage.trim()) return;
 
@@ -79,7 +77,7 @@ export default function TeamChat({
     });
 
     if (error) {
-      console.error("Mesaj gönderilemedi:", error);
+      console.error("Message could not be sent:", error);
     } else {
       setNewMessage("");
     }
@@ -87,14 +85,13 @@ export default function TeamChat({
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Takım Sohbeti</h1>
+          <h1 className="text-xl font-semibold">Team Chat</h1>
           <div className="flex items-center space-x-2">
-            <div className="flex ">
+            <div className="flex">
               {[1, 2, 3, 4].map((i) => (
                 <Avatar key={i} className="h-8 w-8 border-2 border-background">
                   <AvatarImage
@@ -104,7 +101,7 @@ export default function TeamChat({
                 </Avatar>
               ))}
             </div>
-            <span className="text-sm text-muted-foreground">4 aktif</span>
+            <span className="text-sm text-muted-foreground">4 active</span>
           </div>
         </div>
       </header>
@@ -112,7 +109,7 @@ export default function TeamChat({
       <div className="flex-1 flex overflow-hidden">
         <Card className="flex-1 m-6 flex flex-col overflow-hidden">
           <CardHeader>
-            <CardTitle>Genel</CardTitle>
+            <CardTitle>General</CardTitle>
           </CardHeader>
 
           <CardContent className="flex flex-col flex-1 overflow-hidden px-6 pb-1">
@@ -128,8 +125,7 @@ export default function TeamChat({
                   new Date(message.inserted_at),
                   {
                     addSuffix: true,
-                    locale: tr,
-                  }
+                  },
                 );
 
                 return (
@@ -171,7 +167,7 @@ export default function TeamChat({
               </Button>
               <div className="flex-1 relative">
                 <Input
-                  placeholder="Mesajınızı yazın..."
+                  placeholder="Write a message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => {

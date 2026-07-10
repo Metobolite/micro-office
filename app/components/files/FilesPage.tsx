@@ -1,35 +1,35 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmationDialog";
 import { supabase } from "@/app/lib/supabase";
-import { toast } from "sonner";
+import { FileItem } from "@/app/types/file";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Upload,
-  Search,
-  Filter,
-  FileText,
-  ImageIcon,
-  File,
-  Download,
-  MoreHorizontal,
-  Grid,
-  List,
-} from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmationDialog";
-import { FileItem } from "@/app/types/file";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  Download,
+  File,
+  FileText,
+  Filter,
+  Grid,
+  ImageIcon,
+  List,
+  MoreHorizontal,
+  Search,
+  Upload,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 const getFileIcon = (type: string) => {
   switch (type) {
@@ -43,7 +43,7 @@ const getFileIcon = (type: string) => {
   }
 };
 
-const categories = ["Tümü", "pdf", "image", "document", "video"];
+const categories = ["All", "pdf", "image", "document", "video"];
 
 type FileRow = {
   id: string;
@@ -67,12 +67,12 @@ export function FilesPage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tümü");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
 
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     const { data, error } = await supabase
       .from("files")
       .select("*")
@@ -80,7 +80,7 @@ export function FilesPage({
       .eq("team_id", teamId);
 
     if (error) {
-      console.error("Dosya listeleme hatası:", error);
+      console.error("File listing error:", error);
       return;
     }
     if (!data) return;
@@ -94,40 +94,42 @@ export function FilesPage({
           .createSignedUrl(file.path, 3660);
 
         if (urlError) {
-          console.error("Signed URL alma hatası:", urlError);
+          console.error("Signed URL error:", urlError);
         }
+
+        const fileType = file.type || "other";
 
         return {
           id: file.id,
           name: file.name,
-          type: file.type || "other",
+          type: fileType,
           size: file.size || "0 B",
           modified: new Date(
-            file.uploaded_at || file.created_at || Date.now()
-          ).toLocaleString("tr-TR"),
+            file.uploaded_at || file.created_at || Date.now(),
+          ).toLocaleString("en-US"),
           owner: {
             name: userName,
             avatar: "/placeholder.svg",
           },
-          category: file.type || "Dökümanlar",
+          category: fileType,
           url: urlData?.signedUrl || "",
           path: file.path,
         };
-      })
+      }),
     );
 
     setFiles(filesWithUrl);
-  };
+  }, [teamId, userId, userName]);
 
   const handleDeleteConfirmed = async (file: FileItem) => {
-    const toastId = toast.loading(`"${file.name}" siliniyor...`);
+    const toastId = toast.loading(`Deleting "${file.name}"...`);
 
     const { error: deleteStorageError } = await supabase.storage
       .from("user-files")
       .remove([file.path]);
 
     if (deleteStorageError) {
-      toast.error("Storage silme hatası: " + deleteStorageError.message, {
+      toast.error("Storage delete error: " + deleteStorageError.message, {
         id: toastId,
       });
       return;
@@ -140,13 +142,13 @@ export function FilesPage({
       .eq("team_id", teamId);
 
     if (deleteDbError) {
-      toast.error("Veritabanı silme hatası: " + deleteDbError.message, {
+      toast.error("Database delete error: " + deleteDbError.message, {
         id: toastId,
       });
       return;
     }
 
-    toast.success(`"${file.name}" başarıyla silindi.`, { id: toastId });
+    toast.success(`"${file.name}" was deleted.`, { id: toastId });
     fetchFiles();
   };
 
@@ -155,7 +157,7 @@ export function FilesPage({
       .from("user-files")
       .download(file.path);
     if (error) {
-      alert("Dosya indirme hatası: " + error.message);
+      alert("File download error: " + error.message);
       return;
     }
     const blob = data as Blob;
@@ -168,19 +170,19 @@ export function FilesPage({
 
   useEffect(() => {
     fetchFiles();
-  }, []);
+  }, [fetchFiles]);
 
   const filteredFiles = files.filter((file) => {
     const matchesSearch = file.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === "Tümü" || file.category === selectedCategory;
+      selectedCategory === "All" || file.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -198,7 +200,7 @@ export function FilesPage({
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      alert("Dosya yüklenirken hata oluştu: " + uploadError.message);
+      alert("File upload error: " + uploadError.message);
       return;
     }
 
@@ -209,14 +211,12 @@ export function FilesPage({
       type: determineFileType(fileExt),
       size: formatFileSize(file.size),
       uploaded_at: new Date().toISOString(),
-      category: "Dökümanlar",
+      category: determineFileType(fileExt),
       path: filePath,
     });
 
     if (insertError) {
-      alert(
-        "Veritabanına kayıt yapılırken hata oluştu: " + insertError.message
-      );
+      alert("Database insert error: " + insertError.message);
       return;
     }
 
@@ -248,10 +248,10 @@ export function FilesPage({
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Dosyalar</h1>
+          <h1 className="text-xl font-semibold">Files</h1>
           <Button onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />
-            Dosya Yükle
+            Upload File
           </Button>
           <input
             type="file"
@@ -263,12 +263,11 @@ export function FilesPage({
       </header>
 
       <div className="flex-1 p-6 space-y-6">
-        {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Dosya ara..."
+              placeholder="Search files..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -329,15 +328,15 @@ export function FilesPage({
                             onClick={() => handleDownload(file)}
                           >
                             <Download className="h-4 w-4 mr-2" />
-                            İndir
+                            Download
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
                               navigator.clipboard.writeText(file.url);
-                              toast.success("Link kopyalandı!");
+                              toast.success("Link copied.");
                             }}
                           >
-                            Linki Kopyala
+                            Copy Link
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -345,7 +344,7 @@ export function FilesPage({
                               setShowDeleteDialog(true);
                             }}
                           >
-                            Sil
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -431,10 +430,10 @@ export function FilesPage({
                               onClick={() => window.open(file.url, "_blank")}
                             >
                               <Download className="h-4 w-4 mr-2" />
-                              İndir
+                              Download
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Paylaş</DropdownMenuItem>
-                            <DropdownMenuItem>Sil</DropdownMenuItem>
+                            <DropdownMenuItem>Share</DropdownMenuItem>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

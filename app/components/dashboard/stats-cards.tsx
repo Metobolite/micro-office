@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckSquare, Clock, Users, FileText } from "lucide-react";
 import { createClient } from "@/app/lib/supabaseServer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckSquare, Clock, FileText, Users } from "lucide-react";
 
 export default async function StatsCards({ teamId }: { teamId: string }) {
   const supabase = await createClient();
@@ -23,28 +23,28 @@ export default async function StatsCards({ teamId }: { teamId: string }) {
 
   const stats = [
     {
-      title: "Toplam Görevler",
+      title: "Total Tasks",
       value: totalTasks,
       change: "+12%",
       icon: Clock,
       color: "text-blue-600",
     },
     {
-      title: "Tamamlanan",
+      title: "Completed",
       value: completedTasks,
       change: "+8%",
       icon: CheckSquare,
       color: "text-green-600",
     },
     {
-      title: "Takım Üyeleri",
+      title: "Team Members",
       value: teamMembers?.length ?? 0,
       change: "+2",
       icon: Users,
       color: "text-purple-600",
     },
     {
-      title: "Dosyalar",
+      title: "Files",
       value: files?.length ?? 0,
       change: "+24",
       icon: FileText,
@@ -63,7 +63,8 @@ export default async function StatsCards({ teamId }: { teamId: string }) {
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">{stat.change}</span> geçen aydan
+              <span className="text-green-600">{stat.change}</span> from last
+              month
             </p>
           </CardContent>
         </Card>

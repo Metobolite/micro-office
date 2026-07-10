@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/app/lib/supabase";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import AddEventModal from "./AddEventModal";
 import { EventType } from "@/app/types/EventType";
-import EditEventModal from "./EditEventModal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import AddEventModal from "./AddEventModal";
 import DeleteEventModal from "./DeleteEventModal";
+import EditEventModal from "./EditEventModal";
 
 export default function Calendar({
   userId,
@@ -24,7 +24,7 @@ export default function Calendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<EventType[]>([]);
 
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     const { data, error } = await supabase
       .from("events")
       .select("*")
@@ -32,13 +32,13 @@ export default function Calendar({
       .eq("user_id", userId)
       .order("date", { ascending: true });
 
-    if (error) console.error("Etkinlikler alınamadı:", error);
+    if (error) console.error("Events could not be loaded:", error);
     else setEvents(data as EventType[]);
-  };
+  }, [teamId, userId]);
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [fetchEvents]);
 
   const today = useMemo(() => new Date(), []);
   const daysInMonth = new Date(
@@ -56,20 +56,20 @@ export default function Calendar({
   })();
 
   const monthNames = [
-    "Ocak",
-    "Şubat",
-    "Mart",
-    "Nisan",
-    "Mayıs",
-    "Haziran",
-    "Temmuz",
-    "Ağustos",
-    "Eylül",
-    "Ekim",
-    "Kasım",
-    "Aralık",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
-  const dayNames = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, EventType[]> = {};
@@ -156,7 +156,7 @@ export default function Calendar({
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Takvim</h1>
+          <h1 className="text-xl font-semibold">Calendar</h1>
           <AddEventModal
             onEventAdded={fetchEvents}
             teamId={teamId}
@@ -167,7 +167,6 @@ export default function Calendar({
 
       <div className="flex-1 p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Takvim */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -188,7 +187,7 @@ export default function Calendar({
                     size="sm"
                     onClick={() => setCurrentDate(new Date())}
                   >
-                    Bugün
+                    Today
                   </Button>
                   <Button
                     variant="outline"
@@ -217,10 +216,9 @@ export default function Calendar({
             </CardContent>
           </Card>
 
-          {/* Bugünkü Etkinlikler */}
           <Card>
             <CardHeader>
-              <CardTitle>Bugünkü Etkinlikler</CardTitle>
+              <CardTitle>Today&apos;s Events</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {todayEvents.map((event) => (
@@ -242,7 +240,7 @@ export default function Calendar({
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     <span>{event.time?.slice(0, 5)}</span>
-                    <span>•</span>
+                    <span>-</span>
                     <span>{event.duration}</span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -266,7 +264,7 @@ export default function Calendar({
                       ))}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {event.attendees?.length || 0} katılımcı
+                      {event.attendees?.length || 0} attendees
                     </span>
                   </div>
                   <DeleteEventModal
@@ -286,10 +284,9 @@ export default function Calendar({
           </Card>
         </div>
 
-        {/* Yaklaşan Etkinlikler */}
         <Card>
           <CardHeader>
-            <CardTitle>Yaklaşan Etkinlikler</CardTitle>
+            <CardTitle>Upcoming Events</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -297,7 +294,7 @@ export default function Calendar({
                 <div key={event.id} className="border rounded-lg p-4 space-y-2">
                   <h3 className="font-medium">{event.title}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(event.date).toLocaleDateString("tr-TR")} -{" "}
+                    {new Date(event.date).toLocaleDateString("en-US")} -{" "}
                     {event.time?.slice(0, 5)}
                   </p>
                   <Badge variant="outline" className="text-xs capitalize">

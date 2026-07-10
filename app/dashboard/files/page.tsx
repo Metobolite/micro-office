@@ -1,13 +1,11 @@
-// app/files/page.tsx
-
-import { createClient } from "@/app/lib/supabaseServer";
 import { FilesPage } from "@/app/components/files/FilesPage";
-import { redirect } from "next/navigation";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
   type TeamSearchParams,
 } from "@/app/lib/team-context";
+import { createClient } from "@/app/lib/supabaseServer";
+import { redirect } from "next/navigation";
 
 export default async function Page({
   searchParams,
@@ -45,7 +43,7 @@ export default async function Page({
   return (
     <FilesPage
       userId={user.id}
-      userName={user.user_metadata?.full_name || user.email || "Kullanıcı"}
+      userName={user.user_metadata?.full_name || user.email || "User"}
       teamId={activeTeamId}
     />
   );

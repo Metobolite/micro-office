@@ -18,11 +18,11 @@ export default function TeamTimeTracker({
     <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Zaman Takibi</CardTitle>
+          <CardTitle>Time Tracking</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Zaman takip aracı yakında burada görünecek.
+            The time tracking tool will appear here soon.
           </p>
         </CardContent>
       </Card>

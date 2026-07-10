@@ -43,7 +43,7 @@ export default async function DashboardPage({
   return (
     <TeamChat
       userId={user.id}
-      userName={user.user_metadata.full_name || user.email}
+      userName={user.user_metadata?.full_name || user.email || "User"}
       teamId={activeTeamId}
     />
   );

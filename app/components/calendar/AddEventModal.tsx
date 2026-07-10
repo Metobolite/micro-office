@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function AddEventModal({
   userId,
@@ -35,7 +35,7 @@ export default function AddEventModal({
 
   const handleSubmit = async () => {
     if (!title || !date || !time) {
-      toast.error("Lütfen başlık, tarih ve saat bilgilerini doldurun.");
+      toast.error("Please fill in the title, date, and time.");
       return;
     }
 
@@ -59,10 +59,10 @@ export default function AddEventModal({
     ]);
 
     if (error) {
-      toast.error("Etkinlik eklenemedi.");
+      toast.error("Event could not be added.");
       console.error(error);
     } else {
-      toast.success("Etkinlik eklendi!");
+      toast.success("Event added.");
       onEventAdded();
       setOpen(false);
       setTitle("");
@@ -77,17 +77,17 @@ export default function AddEventModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>+ Etkinlik Ekle</Button>
+        <Button>+ Add Event</Button>
       </DialogTrigger>
       <DialogContent className="space-y-2">
         <DialogHeader>
           <VisuallyHidden>
-            <DialogTitle>Etkinlik Ekle</DialogTitle>
+            <DialogTitle>Add Event</DialogTitle>
           </VisuallyHidden>
         </DialogHeader>
 
         <div>
-          <Label className="mb-2">Başlık</Label>
+          <Label className="mb-2">Title</Label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -96,7 +96,7 @@ export default function AddEventModal({
         </div>
 
         <div>
-          <Label className="mb-2">Açıklama</Label>
+          <Label className="mb-2">Description</Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -104,21 +104,21 @@ export default function AddEventModal({
         </div>
 
         <div>
-          <Label className="mb-2">Tür</Label>
+          <Label className="mb-2">Type</Label>
           <select
             className="w-full p-2 border rounded"
             value={type}
             onChange={(e) => setType(e.target.value)}
           >
-            <option value="meeting">Toplantı</option>
-            <option value="review">İnceleme</option>
-            <option value="presentation">Sunum</option>
-            <option value="planning">Planlama</option>
+            <option value="meeting">Meeting</option>
+            <option value="review">Review</option>
+            <option value="presentation">Presentation</option>
+            <option value="planning">Planning</option>
           </select>
         </div>
 
         <div>
-          <Label className="mb-2">Tarih</Label>
+          <Label className="mb-2">Date</Label>
           <Input
             type="date"
             value={date}
@@ -128,7 +128,7 @@ export default function AddEventModal({
         </div>
 
         <div>
-          <Label className="mb-2">Saat</Label>
+          <Label className="mb-2">Time</Label>
           <Input
             type="time"
             value={time}
@@ -138,7 +138,7 @@ export default function AddEventModal({
         </div>
 
         <div>
-          <Label className="mb-2">Süre</Label>
+          <Label className="mb-2">Duration</Label>
           <Input
             type="text"
             placeholder="01:00"
@@ -148,7 +148,7 @@ export default function AddEventModal({
         </div>
 
         <Button onClick={handleSubmit} className="w-full">
-          Kaydet
+          Save
         </Button>
       </DialogContent>
     </Dialog>

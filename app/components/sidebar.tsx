@@ -2,14 +2,14 @@
 
 import {
   Calendar,
+  CheckSquare,
   FileText,
   Home,
+  LogOut,
   MessageSquare,
   Settings,
   Timer,
-  CheckSquare,
   Users,
-  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -47,26 +47,26 @@ export function AppSidebar() {
 
   const navigation = [
     {
-      title: "Ana Sayfa",
+      title: "Main",
       items: [
         { title: "Dashboard", url: "/dashboard", icon: Home },
-        { title: "Görevler", url: "/dashboard/tasks", icon: CheckSquare },
-        { title: "Sohbet", url: "/dashboard/chat", icon: MessageSquare },
+        { title: "Tasks", url: "/dashboard/tasks", icon: CheckSquare },
+        { title: "Chat", url: "/dashboard/chat", icon: MessageSquare },
       ],
     },
     {
-      title: "Araçlar",
+      title: "Tools",
       items: [
-        { title: "Dosyalar", url: "/dashboard/files", icon: FileText },
-        { title: "Zaman Takibi", url: "/dashboard/time-tracker", icon: Timer },
-        { title: "Takvim", url: "/dashboard/calendar", icon: Calendar },
+        { title: "Files", url: "/dashboard/files", icon: FileText },
+        { title: "Time Tracking", url: "/dashboard/time-tracker", icon: Timer },
+        { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
       ],
     },
     {
-      title: "Ayarlar",
+      title: "Settings",
       items: [
-        { title: "Takım", url: "/dashboard/team", icon: Users },
-        { title: "Profil", url: "/settings", icon: Settings },
+        { title: "Team", url: "/dashboard/team", icon: Users },
+        { title: "Profile", url: "/settings", icon: Settings },
         { title: "Logout", icon: LogOut, onClick: handleLogout },
       ],
     },

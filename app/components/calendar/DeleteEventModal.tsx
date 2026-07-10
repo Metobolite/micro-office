@@ -1,15 +1,15 @@
 "use client";
 
+import { supabase } from "@/app/lib/supabase";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/app/lib/supabase";
-import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DeleteEventModal({
   userId,
@@ -21,12 +21,16 @@ export default function DeleteEventModal({
   onDeleted: () => void;
 }) {
   const handleDelete = async () => {
-    const { error } = await supabase.from("events").delete().eq("id", eventId).eq("user_id", userId);
+    const { error } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventId)
+      .eq("user_id", userId);
     if (error) {
-      toast.error("Etkinlik silinemedi.");
+      toast.error("Event could not be deleted.");
       console.error(error);
     } else {
-      toast.success("Etkinlik silindi.");
+      toast.success("Event deleted.");
       onDeleted();
     }
   };
@@ -35,23 +39,21 @@ export default function DeleteEventModal({
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="destructive" size="sm" className="w-full">
-          <Trash2 className="w-4 h-4 mr-1" /> Sil
+          <Trash2 className="w-4 h-4 mr-1" /> Delete
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogTitle>Etkinliği silmek istiyor musunuz?</DialogTitle>
+        <DialogTitle>Delete this event?</DialogTitle>
         <div className="flex justify-end gap-2 mt-4">
           <DialogTrigger asChild>
-            <Button variant="secondary">
-              İptal
-            </Button>
+            <Button variant="secondary">Cancel</Button>
           </DialogTrigger>
           <Button
             onClick={handleDelete}
             variant="destructive"
             className="hover:bg-destructive/90"
           >
-            Evet, Sil
+            Yes, delete
           </Button>
         </div>
       </DialogContent>
