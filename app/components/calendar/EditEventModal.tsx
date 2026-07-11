@@ -82,7 +82,7 @@ export default function EditEventModal({
         <div>
           <Label className="mb-2">Type</Label>
           <select
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded bg-accent text-accent-foreground"
             value={type}
             onChange={(e) => setType(e.target.value as EventType["type"])}
           >

@@ -16,6 +16,44 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useState } from "react";
 import { toast } from "sonner";
 
+const TIME_STEP_MINUTES = 30;
+const MAX_DURATION_HOURS = 10;
+
+const formatTimeValue = (totalMinutes: number) => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+const formatDurationLabel = (totalMinutes: number) => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const hourLabel = `${hours} ${hours === 1 ? "hour" : "hours"}`;
+
+  if (hours === 0) return `${minutes} minutes`;
+  if (minutes === 0) return hourLabel;
+
+  return `${hourLabel} ${minutes} minutes`;
+};
+
+const timeOptions = Array.from(
+  { length: (24 * 60) / TIME_STEP_MINUTES },
+  (_, index) => formatTimeValue(index * TIME_STEP_MINUTES),
+);
+
+const durationOptions = Array.from(
+  { length: (MAX_DURATION_HOURS * 60) / TIME_STEP_MINUTES },
+  (_, index) => {
+    const totalMinutes = (index + 1) * TIME_STEP_MINUTES;
+
+    return {
+      label: formatDurationLabel(totalMinutes),
+      value: formatTimeValue(totalMinutes),
+    };
+  },
+);
+
 export default function AddEventModal({
   userId,
   onEventAdded,
@@ -106,7 +144,7 @@ export default function AddEventModal({
         <div>
           <Label className="mb-2">Type</Label>
           <select
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded bg-accent text-accent-foreground"
             value={type}
             onChange={(e) => setType(e.target.value)}
           >
@@ -129,22 +167,36 @@ export default function AddEventModal({
 
         <div>
           <Label className="mb-2">Time</Label>
-          <Input
-            type="time"
+          <select
+            className="w-full p-2 border rounded bg-accent text-accent-foreground"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             required
-          />
+          >
+            <option value="" disabled>
+              Select a time
+            </option>
+            {timeOptions.map((timeOption) => (
+              <option key={timeOption} value={timeOption}>
+                {timeOption}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
           <Label className="mb-2">Duration</Label>
-          <Input
-            type="text"
-            placeholder="01:00"
+          <select
+            className="w-full p-2 border rounded bg-accent text-accent-foreground"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
-          />
+          >
+            {durationOptions.map((durationOption) => (
+              <option key={durationOption.value} value={durationOption.value}>
+                {durationOption.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <Button onClick={handleSubmit} className="w-full">
