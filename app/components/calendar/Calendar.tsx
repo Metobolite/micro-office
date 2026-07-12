@@ -297,6 +297,9 @@ export default function Calendar({
                     {new Date(event.date).toLocaleDateString("en-US")} -{" "}
                     {event.time?.slice(0, 5)}
                   </p>
+                  <p className="text-sm bg-accent text-accent-foreground px-2 py-1 rounded">
+                    {event.description}
+                  </p>
                   <Badge variant="outline" className="text-xs capitalize">
                     {event.type}
                   </Badge>
