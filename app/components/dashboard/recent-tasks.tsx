@@ -1,7 +1,7 @@
 import { createClient } from "@/app/lib/supabaseServer";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TeamScopedProps } from "@/app/types/team";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -14,12 +14,12 @@ function formatDate(dateString: string) {
   });
 }
 
-export async function RecentTasks({ teamId }: { teamId: string }) {
+export async function RecentTasks({ teamId }: TeamScopedProps) {
   const supabase = await createClient();
 
   const { data: tasks, error } = await supabase
     .from("tasks")
-    .select("*")
+    .select("id, title, status, priority, due_date")
     .eq("team_id", teamId)
     .order("created_at", { ascending: false })
     .limit(4);
@@ -47,22 +47,11 @@ export async function RecentTasks({ teamId }: { teamId: string }) {
       <CardContent className="space-y-4">
         {tasks.map((task) => (
           <div key={task.id} className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={task.avatar || "/placeholder.svg"} />
-                <AvatarFallback>
-                  {task.assignee_name
-                    ?.split(" ")
-                    .map((n: string) => n[0])
-                    .join("") || "NA"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">{task.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(task.due_date)}
-                </p>
-              </div>
+            <div>
+              <p className="text-sm font-medium">{task.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {task.due_date ? formatDate(task.due_date) : "No due date"}
+              </p>
             </div>
             <div className="flex items-center space-x-2">
               <Badge

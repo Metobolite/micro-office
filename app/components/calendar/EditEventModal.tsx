@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
-import type { EventType } from "@/app/types/EventType";
+import type { EditEventModalProps, EventType } from "@/app/types/EventType";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,12 +20,7 @@ export default function EditEventModal({
   onEventUpdated,
   teamId,
   userId,
-}: {
-  event: EventType;
-  onEventUpdated: () => void;
-  teamId: string;
-  userId: string;
-}) {
+}: EditEventModalProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(event.title);
   const [description, setDescription] = useState(event.description ?? "");

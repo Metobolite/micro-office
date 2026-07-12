@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
-import { EventType } from "@/app/types/EventType";
+import type { CalendarProps, EventType } from "@/app/types/EventType";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,7 @@ import EditEventModal from "./EditEventModal";
 export default function Calendar({
   userId,
   teamId,
-}: {
-  teamId: string;
-  userId: string;
-}) {
+}: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<EventType[]>([]);
 

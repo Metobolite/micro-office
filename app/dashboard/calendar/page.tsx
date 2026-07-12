@@ -4,14 +4,12 @@ import { createClient } from "../../lib/supabaseServer";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
-  type TeamSearchParams,
 } from "@/app/lib/team-context";
+import type { TeamSearchPageProps } from "@/app/types/team";
 
 export default async function CalendarPage({
   searchParams,
-}: {
-  searchParams?: Promise<TeamSearchParams>;
-}) {
+}: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {

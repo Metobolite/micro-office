@@ -3,12 +3,11 @@ import { AppSidebar } from "@/app/components/sidebar";
 import { AppToaster } from "@/app/components/theme";
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabaseServer";
+import type { LayoutProps } from "@/app/types/common";
 
 export default async function DashboardLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: LayoutProps) {
   const supabase = await createClient();
 
   const {

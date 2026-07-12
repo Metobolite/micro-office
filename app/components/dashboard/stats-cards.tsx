@@ -1,22 +1,23 @@
 import { createClient } from "@/app/lib/supabaseServer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckSquare, Clock, FileText, Users } from "lucide-react";
+import type { TeamScopedProps } from "@/app/types/team";
 
-export default async function StatsCards({ teamId }: { teamId: string }) {
+export default async function StatsCards({ teamId }: TeamScopedProps) {
   const supabase = await createClient();
 
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("id, status, team_id")
-    .eq("team_id", teamId);
-  const { data: teamMembers } = await supabase
-    .from("team_members")
-    .select("team_id")
-    .eq("team_id", teamId);
-  const { data: files } = await supabase
-    .from("files")
-    .select("id, team_id")
-    .eq("team_id", teamId);
+  const [{ data: tasks }, { count: teamMemberCount }, { count: fileCount }] =
+    await Promise.all([
+      supabase.from("tasks").select("status").eq("team_id", teamId),
+      supabase
+        .from("team_members")
+        .select("team_id", { count: "exact", head: true })
+        .eq("team_id", teamId),
+      supabase
+        .from("files")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", teamId),
+    ]);
 
   const totalTasks = tasks?.length ?? 0;
   const completedTasks = tasks?.filter((t) => t.status === "done").length ?? 0;
@@ -25,28 +26,24 @@ export default async function StatsCards({ teamId }: { teamId: string }) {
     {
       title: "Total Tasks",
       value: totalTasks,
-      change: "+12%",
       icon: Clock,
       color: "text-blue-600",
     },
     {
       title: "Completed",
       value: completedTasks,
-      change: "+8%",
       icon: CheckSquare,
       color: "text-green-600",
     },
     {
       title: "Team Members",
-      value: teamMembers?.length ?? 0,
-      change: "+2",
+      value: teamMemberCount ?? 0,
       icon: Users,
       color: "text-purple-600",
     },
     {
       title: "Files",
-      value: files?.length ?? 0,
-      change: "+24",
+      value: fileCount ?? 0,
       icon: FileText,
       color: "text-orange-600",
     },
@@ -62,10 +59,6 @@ export default async function StatsCards({ teamId }: { teamId: string }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">{stat.change}</span> from last
-              month
-            </p>
           </CardContent>
         </Card>
       ))}

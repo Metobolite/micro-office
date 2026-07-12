@@ -1,31 +1,16 @@
 import { ThemeToggle } from "@/app/components/theme";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
 import { createClient } from "@/app/lib/supabaseServer";
+import type {
+  TeamListItem,
+  TeamRecord,
+} from "@/app/types/team";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-type TeamRow = {
-  id: string;
-  name: string | null;
-  owner_id: string | null;
-};
-
-type TeamMembershipRow = {
-  team_id: string;
-  role: string | null;
-  status: string | null;
-  joined_at: string | null;
-};
-
-type TeamListItem = TeamRow &
-  TeamMembershipRow & {
-    joinedLabel: string;
-    statusLabel: string;
-  };
 
 function formatJoinedAt(joinedAt: string | null) {
   if (!joinedAt) return "Unknown";
@@ -72,7 +57,7 @@ export default async function TeamsPage() {
         .from("teams")
         .select("id, name, owner_id")
         .in("id", teamIds)
-    : { data: [] as TeamRow[] };
+    : { data: [] as TeamRecord[] };
 
   const teamsById = new Map((teams || []).map((team) => [team.id, team]));
 

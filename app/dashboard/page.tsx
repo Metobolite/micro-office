@@ -9,15 +9,13 @@ import { createClient } from "@/app/lib/supabaseServer";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
-  type TeamSearchParams,
 } from "../lib/team-context";
+import type { TeamSearchPageProps } from "@/app/types/team";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage({
   searchParams,
-}: {
-  searchParams?: Promise<TeamSearchParams>;
-}) {
+}: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {
@@ -31,7 +29,7 @@ export default async function DashboardPage({
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, activeTeam, isRequestedTeamIdValid } =
+  const { activeTeamId, activeTeam, isRequestedTeamIdValid, memberships } =
     await getTeamContext(supabase, user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
@@ -42,10 +40,40 @@ export default async function DashboardPage({
     return <CreateTeamForm userId={user.id} />;
   }
 
+  const activeMembership = memberships.find(
+    (membership) => membership.team_id === activeTeamId,
+  );
+  const metadataFullName =
+    typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name.trim()
+      : "";
+  const metadataName =
+    typeof user.user_metadata?.name === "string"
+      ? user.user_metadata.name.trim()
+      : "";
+  const metadataAvatar =
+    typeof user.user_metadata?.avatar_url === "string"
+      ? user.user_metadata.avatar_url
+      : "";
+  const providerAvatar =
+    typeof user.user_metadata?.picture === "string"
+      ? user.user_metadata.picture
+      : "";
+  const dashboardUser = {
+    name:
+      metadataFullName ||
+      metadataName ||
+      activeMembership?.name ||
+      user.email?.split("@")[0] ||
+      "User",
+    avatarUrl:
+      metadataAvatar || activeMembership?.avatar_url || providerAvatar || null,
+  };
+
   return (
     <div className="flex flex-col h-full">
       <DashboardHeader
-        userName={user.user_metadata?.full_name || user.email || "User"}
+        user={dashboardUser}
         teamName={activeTeam?.name}
       />
       <div className="flex-1 p-6 space-y-6 overflow-auto">

@@ -1,6 +1,7 @@
 import { createClient } from "@/app/lib/supabaseServer";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TeamScopedProps } from "@/app/types/team";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -13,12 +14,12 @@ function formatDate(dateString: string) {
   });
 }
 
-export async function RecentMessages({ teamId }: { teamId: string }) {
+export async function RecentMessages({ teamId }: TeamScopedProps) {
   const supabase = await createClient();
 
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("*")
+    .select("id, user_name, content, inserted_at")
     .eq("team_id", teamId)
     .order("inserted_at", { ascending: false })
     .limit(4);
@@ -47,11 +48,12 @@ export async function RecentMessages({ teamId }: { teamId: string }) {
         {messages.map((message) => (
           <div key={message.id} className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={message.avatar || "/placeholder.svg"} />
               <AvatarFallback>
                 {message.user_name
-                  ?.split(" ")
-                  .map((n: string) => n[0])
+                  ?.split(/\s+/)
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((part: string) => part[0]?.toUpperCase())
                   .join("") || "NA"}
               </AvatarFallback>
             </Avatar>

@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import type { AddEventModalProps } from "@/app/types/EventType";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,11 +59,7 @@ export default function AddEventModal({
   userId,
   onEventAdded,
   teamId,
-}: {
-  userId: string;
-  onEventAdded: () => void;
-  teamId: string;
-}) {
+}: AddEventModalProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

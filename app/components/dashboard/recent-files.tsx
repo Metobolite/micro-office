@@ -1,6 +1,7 @@
 import { createClient } from "@/app/lib/supabaseServer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File, FileText, ImageIcon } from "lucide-react";
+import type { TeamScopedProps } from "@/app/types/team";
 
 const getFileIcon = (type: string) => {
   switch (type) {
@@ -24,12 +25,12 @@ function formatDate(dateString: string) {
   });
 }
 
-export async function RecentFiles({ teamId }: { teamId: string }) {
+export async function RecentFiles({ teamId }: TeamScopedProps) {
   const supabase = await createClient();
 
   const { data: files, error } = await supabase
     .from("files")
-    .select("*")
+    .select("id, name, type, size, uploaded_at")
     .eq("team_id", teamId)
     .order("uploaded_at", { ascending: false })
     .limit(4);
@@ -55,7 +56,7 @@ export async function RecentFiles({ teamId }: { teamId: string }) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {files.slice(0, 4).map((file) => {
+          {files.map((file) => {
             const Icon = getFileIcon(file.type);
             return (
               <div
@@ -67,7 +68,9 @@ export async function RecentFiles({ teamId }: { teamId: string }) {
                   <p className="text-sm font-medium truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground">{file.size}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(file.uploaded_at)}
+                    {file.uploaded_at
+                      ? formatDate(file.uploaded_at)
+                      : "Unknown date"}
                   </p>
                 </div>
               </div>

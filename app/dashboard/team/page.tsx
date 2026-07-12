@@ -3,8 +3,8 @@ import { createClient } from "@/app/lib/supabaseServer";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
-  type TeamSearchParams,
 } from "@/app/lib/team-context";
+import type { TeamSearchPageProps } from "@/app/types/team";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +15,7 @@ import { redirect } from "next/navigation";
 
 export default async function TeamPage({
   searchParams,
-}: {
-  searchParams?: Promise<TeamSearchParams>;
-}) {
+}: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {
@@ -32,11 +30,8 @@ export default async function TeamPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
 
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    supabase,
-    user.id,
-    requestedTeamId,
-  );
+  const { activeTeamId, isRequestedTeamIdValid, memberships } =
+    await getTeamContext(supabase, user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
@@ -45,6 +40,14 @@ export default async function TeamPage({
   if (!activeTeamId) {
     redirect("/teams");
   }
+
+  const activeMembership = memberships.find(
+    (membership) => membership.team_id === activeTeamId,
+  );
+  const inviterRole =
+    activeMembership?.role === "owner" || activeMembership?.role === "admin"
+      ? activeMembership.role
+      : null;
 
   const { data } = await supabase
     .from("team_members")
@@ -76,7 +79,13 @@ export default async function TeamPage({
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex flex-1 items-center justify-between">
           <h1 className="text-xl font-semibold">Team</h1>
-          <AddTeamMemberForm teamId={activeTeamId} />
+          {inviterRole ? (
+            <AddTeamMemberForm
+              key={`${activeTeamId}:${inviterRole}`}
+              teamId={activeTeamId}
+              inviterRole={inviterRole}
+            />
+          ) : null}
         </div>
       </header>
 

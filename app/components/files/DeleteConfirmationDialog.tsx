@@ -1,6 +1,6 @@
 "use client";
 
-import { FileItem } from "@/app/types/file";
+import type { DeleteConfirmationDialogProps } from "@/app/types/file";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,13 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface DeleteConfirmationDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  file: FileItem | null;
-  onConfirm: (file: FileItem) => void;
-}
 
 export function DeleteConfirmationDialog({
   open,

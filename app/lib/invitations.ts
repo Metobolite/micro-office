@@ -1,4 +1,9 @@
 import { createHash, randomBytes } from "crypto";
+import type { InvitationRole } from "@/app/types/invitation";
+
+export function isInvitationRole(value: unknown): value is InvitationRole {
+  return value === "member" || value === "admin";
+}
 
 export function createInvitationToken() {
   return randomBytes(32).toString("hex");

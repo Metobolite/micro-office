@@ -1,14 +1,8 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
-import { Task } from "@/app/types/task";
+import type { TaskEditorProps } from "@/app/types/task";
 import { useState } from "react";
-
-type TaskEditorProps = {
-  task: Task;
-  onSave: () => void;
-  onCancel: () => void;
-};
 
 export default function TaskEditor({
   task,

@@ -1,13 +1,7 @@
-type SendTeamInvitationEmailParams = {
-  to: string;
-  teamName: string;
-  inviterName: string;
-  inviteUrl: string;
-};
-
-type SendEmailResult =
-  | { success: true }
-  | { success: false; message: string };
+import type {
+  SendEmailResult,
+  SendTeamInvitationEmailParams,
+} from "@/app/types/invitation";
 
 const RESEND_EMAIL_API_URL = "https://api.resend.com/emails";
 
@@ -38,6 +32,7 @@ export async function sendTeamInvitationEmail({
   teamName,
   inviterName,
   inviteUrl,
+  role,
 }: SendTeamInvitationEmailParams): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -51,6 +46,7 @@ export async function sendTeamInvitationEmail({
   const safeTeamName = escapeHtml(teamName);
   const safeInviterName = escapeHtml(inviterName);
   const safeInviteUrl = escapeHtml(inviteUrl);
+  const roleLabel = role === "admin" ? "Admin" : "Member";
 
   let response: Response;
 
@@ -69,6 +65,7 @@ export async function sendTeamInvitationEmail({
           <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
             <h1 style="font-size: 22px; margin-bottom: 12px;">Micro Office invitation</h1>
             <p>${safeInviterName} invited you to join <strong>${safeTeamName}</strong>.</p>
+            <p>Your workspace role will be <strong>${roleLabel}</strong>.</p>
             <p style="margin: 24px 0;">
               <a href="${safeInviteUrl}" style="background: #111827; color: #ffffff; padding: 12px 18px; border-radius: 8px; text-decoration: none;">
                 Open invitation
@@ -78,7 +75,7 @@ export async function sendTeamInvitationEmail({
             <p><a href="${safeInviteUrl}">${safeInviteUrl}</a></p>
           </div>
         `,
-        text: `${inviterName} invited you to join ${teamName}.\n\nOpen invitation: ${inviteUrl}`,
+        text: `${inviterName} invited you to join ${teamName} as ${roleLabel}.\n\nOpen invitation: ${inviteUrl}`,
       }),
     });
   } catch {

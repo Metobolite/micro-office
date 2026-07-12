@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import type { DeleteEventModalProps } from "@/app/types/EventType";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,11 +16,7 @@ export default function DeleteEventModal({
   userId,
   eventId,
   onDeleted,
-}: {
-  userId: string;
-  eventId: string;
-  onDeleted: () => void;
-}) {
+}: DeleteEventModalProps) {
   const handleDelete = async () => {
     const { error } = await supabase
       .from("events")
