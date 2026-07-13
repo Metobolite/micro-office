@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import { ThemeProvider } from "@/app/components/theme";
+import type { LayoutProps } from "@/app/types/common";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,9 +39,7 @@ const themeScript = `
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<LayoutProps>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

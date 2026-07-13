@@ -9,8 +9,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTheme } from "./theme-provider";
+import type { ThemeToggleProps } from "@/app/types/theme";
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const { isDark, toggleTheme } = useTheme();
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 

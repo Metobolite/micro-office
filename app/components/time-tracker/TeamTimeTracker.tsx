@@ -1,11 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type TeamTimeTrackerProps = {
-  taskId: string;
-  userId: string;
-};
+import type { TeamTimeTrackerProps } from "@/app/types/time-tracker";
 
 export default function TeamTimeTracker({
   taskId,

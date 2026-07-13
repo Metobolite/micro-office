@@ -1,13 +1,14 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import type { CreateTeamFormProps } from "@/app/types/team";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-export default function CreateTeamForm({ userId }: { userId: string }) {
+export default function CreateTeamForm({ userId }: CreateTeamFormProps) {
   const router = useRouter();
   const [teamName, setTeamName] = useState("");
   const [isPending, startTransition] = useTransition();

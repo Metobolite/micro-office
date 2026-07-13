@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import type { Message, TeamChatProps } from "@/app/types/message";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,23 +12,11 @@ import { formatDistanceToNow } from "date-fns";
 import { Paperclip, Send, Smile } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-interface Message {
-  id: string;
-  content: string;
-  user_id: string;
-  user_name: string;
-  inserted_at: string;
-}
-
 export default function TeamChat({
   userId,
   userName,
   teamId,
-}: {
-  userId: string;
-  userName: string;
-  teamId: string;
-}) {
+}: TeamChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);

@@ -2,7 +2,7 @@
 
 import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmationDialog";
 import { supabase } from "@/app/lib/supabase";
-import { FileItem } from "@/app/types/file";
+import type { FileItem, FileRow, FilesPageProps } from "@/app/types/file";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,25 +45,11 @@ const getFileIcon = (type: string) => {
 
 const categories = ["All", "pdf", "image", "document", "video"];
 
-type FileRow = {
-  id: string;
-  name: string;
-  type: FileItem["type"] | null;
-  size: string | null;
-  uploaded_at: string | null;
-  created_at: string | null;
-  path: string;
-};
-
 export function FilesPage({
   userId,
   userName,
   teamId,
-}: {
-  userId: string;
-  userName: string;
-  teamId: string;
-}) {
+}: FilesPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");

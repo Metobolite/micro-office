@@ -1,7 +1,12 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
-import { Task } from "@/app/types/task";
+import type {
+  Task,
+  TaskPriority,
+  TasksPageClientProps,
+  TaskStatus,
+} from "@/app/types/task";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import {
@@ -15,30 +20,27 @@ import { useState } from "react";
 import { toast } from "sonner";
 import AddTaskForm from "./AddTaskForm";
 
-const statusLabels: Record<string, string> = {
+const statusLabels: Record<TaskStatus, string> = {
   todo: "To Do",
   in_progress: "In Progress",
   done: "Done",
 };
 
+const taskStatuses: TaskStatus[] = ["todo", "in_progress", "done"];
+
 export default function TasksPageClient({
   userId,
   teamId,
   initialTasks,
-}: {
-  userId: string;
-  teamId: string;
-  initialTasks: Task[];
-}) {
+}: TasksPageClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editPriority, setEditPriority] = useState<"low" | "medium" | "high">(
-    "medium",
-  );
+  const [editPriority, setEditPriority] =
+    useState<TaskPriority>("medium");
   const [editDueDate, setEditDueDate] = useState("");
   const [editDueTime, setEditDueTime] = useState("");
 
@@ -252,7 +254,7 @@ export default function TasksPageClient({
     }
   };
 
-  const getTasksByStatus = (status: string) =>
+  const getTasksByStatus = (status: TaskStatus) =>
     tasks
       .filter((task) => task.status === status)
       .sort((a, b) => a.sort_order - b.sort_order);
@@ -285,7 +287,7 @@ export default function TasksPageClient({
 
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            {["todo", "in_progress", "done"].map((status) => (
+            {taskStatuses.map((status) => (
               <div
                 key={status}
                 className="flex flex-col bg-card p-4 rounded-2xl min-h-[300px] shadow-md text-card-foreground"

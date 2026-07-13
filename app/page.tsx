@@ -21,7 +21,7 @@ export default async function Home() {
           <h2>Please sign in to continue.</h2>
           <Link
             href={destination}
-            className="rounded-lg bg-primary px-6 py-2 text-2xl text-primary-foreground shadow-sm transition duration-300 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-md"
+            className="rounded-lg bg-primary px-6 py-2 text-2xl text-primary-foreground! shadow-sm transition duration-300 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-md"
           >
             {loggedIn ? "Go to Teams" : "Sign in"}
           </Link>

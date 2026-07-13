@@ -1,9 +1,9 @@
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
-  type TeamSearchParams,
 } from "@/app/lib/team-context";
 import { Task } from "@/app/types/task";
+import type { TeamSearchPageProps } from "@/app/types/team";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
@@ -12,9 +12,7 @@ import { createClient } from "../../lib/supabaseServer";
 
 export default async function TasksPage({
   searchParams,
-}: {
-  searchParams?: Promise<TeamSearchParams>;
-}) {
+}: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {

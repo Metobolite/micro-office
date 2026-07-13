@@ -66,7 +66,7 @@ export function AppSidebar() {
       title: "Settings",
       items: [
         { title: "Team", url: "/dashboard/team", icon: Users },
-        { title: "Profile", url: "/settings", icon: Settings },
+        { title: "Settings", url: "/dashboard/settings", icon: Settings },
         { title: "Logout", icon: LogOut, onClick: handleLogout },
       ],
     },

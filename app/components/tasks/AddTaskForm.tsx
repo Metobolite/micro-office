@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import type { AddTaskFormProps } from "@/app/types/task";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,11 +13,7 @@ export default function AddTaskForm({
   userId,
   onTaskAdded,
   teamId,
-}: {
-  userId: string;
-  onTaskAdded: () => void;
-  teamId: string;
-}) {
+}: AddTaskFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");

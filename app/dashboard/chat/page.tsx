@@ -4,14 +4,12 @@ import { redirect } from "next/navigation";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
-  type TeamSearchParams,
 } from "@/app/lib/team-context";
+import type { TeamSearchPageProps } from "@/app/types/team";
 
 export default async function DashboardPage({
   searchParams,
-}: {
-  searchParams?: Promise<TeamSearchParams>;
-}) {
+}: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {

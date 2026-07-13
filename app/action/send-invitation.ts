@@ -5,10 +5,26 @@ import {
   createInvitationToken,
   getInvitationExpiresAt,
   hashInvitationToken,
+  isInvitationRole,
 } from "@/app/lib/invitations";
 import { createClient } from "@/app/lib/supabaseServer";
 
-export async function sendInvitation(email: string, teamId: string) {
+export async function sendInvitation(
+  email: unknown,
+  teamId: unknown,
+  role: unknown,
+) {
+  if (
+    typeof email !== "string" ||
+    typeof teamId !== "string" ||
+    !isInvitationRole(role)
+  ) {
+    return {
+      success: false,
+      message: "Invitation information is invalid.",
+    };
+  }
+
   const normalizedEmail = email.trim().toLowerCase();
 
   if (!normalizedEmail || !teamId) {
@@ -30,7 +46,7 @@ export async function sendInvitation(email: string, teamId: string) {
     };
   }
 
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from("team_members")
     .select("team_id, role")
     .eq("user_id", user.id)
@@ -38,10 +54,25 @@ export async function sendInvitation(email: string, teamId: string) {
     .in("role", ["owner", "admin"])
     .maybeSingle();
 
+  if (membershipError) {
+    console.error("Invitation permission check error:", membershipError);
+    return {
+      success: false,
+      message: "Your invitation permissions could not be verified.",
+    };
+  }
+
   if (!membership) {
     return {
       success: false,
       message: "You must be an owner or admin to invite people to this team.",
+    };
+  }
+
+  if (membership.role !== "owner" && role === "admin") {
+    return {
+      success: false,
+      message: "Only the workspace owner can invite an admin.",
     };
   }
 
@@ -84,7 +115,7 @@ export async function sendInvitation(email: string, teamId: string) {
   const { error: insertError } = await supabase.from("team_invitations").insert({
     team_id: teamId,
     email: normalizedEmail,
-    role: "member",
+    role,
     token_hash: hashInvitationToken(token),
     invited_by: user.id,
     expires_at: getInvitationExpiresAt(),
@@ -110,6 +141,7 @@ export async function sendInvitation(email: string, teamId: string) {
     teamName,
     inviterName,
     inviteUrl: `${getAppUrl()}/invite/${token}`,
+    role,
   });
 
   if (!emailResult.success) {

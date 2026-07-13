@@ -8,16 +8,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { ReactNode } from "react";
-
-type Theme = "light" | "dark";
-
-type ThemeContextValue = {
-  theme: Theme;
-  isDark: boolean;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
-};
+import type {
+  Theme,
+  ThemeContextValue,
+  ThemeProviderProps,
+} from "@/app/types/theme";
 
 const THEME_STORAGE_KEY = "micro-office-theme";
 
@@ -54,7 +49,7 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = theme;
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {

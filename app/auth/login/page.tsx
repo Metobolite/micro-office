@@ -2,10 +2,7 @@ import { ThemeToggle } from "@/app/components/theme";
 import { redirect } from "next/navigation";
 import { createClient } from "../../lib/supabaseServer";
 import LoginButton from "./LoginButton";
-
-type LoginSearchParams = {
-  next?: string | string[];
-};
+import type { LoginPageProps } from "@/app/types/auth";
 
 function getSafeNextPath(next?: string | string[]) {
   const nextPath = Array.isArray(next) ? next[0] : next;
@@ -19,17 +16,13 @@ function getSafeNextPath(next?: string | string[]) {
 
 export default async function LoginPage({
   searchParams,
-}: {
-  searchParams?: Promise<LoginSearchParams>;
-}) {
+}: LoginPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const nextPath = getSafeNextPath(resolvedSearchParams?.next);
   const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data } = await supabase.auth.getClaims();
 
-  if (session) {
+  if (data?.claims) {
     redirect(nextPath);
   }
 

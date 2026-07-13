@@ -2,6 +2,10 @@ import { acceptInvitation } from "@/app/action/accept-invitation";
 import { ThemeToggle } from "@/app/components/theme";
 import { hashInvitationToken } from "@/app/lib/invitations";
 import { createClient } from "@/app/lib/supabaseServer";
+import type {
+  InvitationTeamData,
+  InvitePageProps,
+} from "@/app/types/invitation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,16 +16,6 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-type InvitePageParams = {
-  token: string;
-};
-
-type InvitePageSearchParams = {
-  error?: string | string[];
-};
-
-type InvitationTeamData = { name: string | null } | { name: string | null }[];
 
 function getFirstParam(value?: string | string[]) {
   if (Array.isArray(value)) {
@@ -55,10 +49,7 @@ function getErrorMessage(error?: string) {
 export default async function InvitePage({
   params,
   searchParams,
-}: {
-  params: Promise<InvitePageParams>;
-  searchParams?: Promise<InvitePageSearchParams>;
-}) {
+}: InvitePageProps) {
   const { token } = await params;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const pageError = getErrorMessage(getFirstParam(resolvedSearchParams?.error));
@@ -73,7 +64,7 @@ export default async function InvitePage({
 
   const { data: invitation } = await supabase
     .from("team_invitations")
-    .select("email, status, expires_at, teams(name)")
+    .select("email, role, status, expires_at, teams(name)")
     .eq("token_hash", hashInvitationToken(token))
     .maybeSingle();
 
@@ -128,6 +119,12 @@ export default async function InvitePage({
                 <span className="ml-1 font-medium text-foreground">
                   {user.email}
                 </span>
+              </p>
+              <p>
+                Workspace role:
+                <Badge variant="outline" className="ml-2 capitalize">
+                  {invitation.role || "member"}
+                </Badge>
               </p>
             </div>
           )}

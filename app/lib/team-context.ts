@@ -1,35 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-export type TeamRecord = {
-	id: string;
-	name: string | null;
-	owner_id: string | null;
-};
-
-export type TeamMembershipRecord = {
-	team_id: string;
-	role: string | null;
-	status: string | null;
-	joined_at: string | null;
-	user_id?: string | null;
-	name?: string | null;
-	email?: string | null;
-	phone?: string | null;
-	avatar_url?: string | null;
-};
-
-export type TeamContext = {
-	memberships: TeamMembershipRecord[];
-	teams: TeamRecord[];
-	teamIds: string[];
-	activeTeamId: string | null;
-	activeTeam: TeamRecord | null;
-	isRequestedTeamIdValid: boolean;
-};
-
-export type TeamSearchParams = {
-	teamId?: string | string[];
-};
+import type {
+	TeamContext,
+	TeamMembershipRecord,
+	TeamRecord,
+	TeamSearchParams,
+} from "@/app/types/team";
 
 export function getTeamIdFromSearchParams(searchParams?: TeamSearchParams) {
 	const teamId = searchParams?.teamId;

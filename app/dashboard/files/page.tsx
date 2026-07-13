@@ -2,16 +2,14 @@ import { FilesPage } from "@/app/components/files/FilesPage";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
-  type TeamSearchParams,
 } from "@/app/lib/team-context";
 import { createClient } from "@/app/lib/supabaseServer";
+import type { TeamSearchPageProps } from "@/app/types/team";
 import { redirect } from "next/navigation";
 
 export default async function Page({
   searchParams,
-}: {
-  searchParams?: Promise<TeamSearchParams>;
-}) {
+}: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {
