@@ -20,11 +20,9 @@ export default async function LoginPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const nextPath = getSafeNextPath(resolvedSearchParams?.next);
   const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data } = await supabase.auth.getClaims();
 
-  if (session) {
+  if (data?.claims) {
     redirect(nextPath);
   }
 
