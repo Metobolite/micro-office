@@ -1,10 +1,7 @@
 import { ThemeToggle } from "@/app/components/theme";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
 import { createClient } from "@/app/lib/supabaseServer";
-import type {
-  TeamListItem,
-  TeamRecord,
-} from "@/app/types/team";
+import type { TeamListItem, TeamRecord } from "@/app/types/team";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -139,7 +136,7 @@ export default async function TeamsPage() {
                   key={`${team.id}-${team.team_id}`}
                 >
                   <Card className="overflow-hidden border-border shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
-                    <CardHeader className="space-y-4 bg-primary text-primary-foreground">
+                    <CardHeader className="bg-primary text-primary-foreground rounded-xl py-3 gap-0">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
                           <Badge
