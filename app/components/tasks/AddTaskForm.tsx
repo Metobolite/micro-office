@@ -1,6 +1,10 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import {
+  localDateTimeToISOString,
+  TIME_OPTIONS,
+} from "@/app/lib/dateTime";
 import type { AddTaskFormProps } from "@/app/types/task";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,15 +34,7 @@ export default function AddTaskForm({
       return;
     }
 
-    let dueDateTime: string | null = null;
-
-    if (dueDate) {
-      const fullDate = dueTime
-        ? `${dueDate}T${dueTime}:00`
-        : `${dueDate}T00:00:00`;
-
-      dueDateTime = new Date(fullDate).toISOString();
-    }
+    const dueDateTime = localDateTimeToISOString(dueDate, dueTime);
 
     const { error } = await supabase.from("tasks").insert({
       user_id: userId,
@@ -109,7 +105,12 @@ export default function AddTaskForm({
             type="date"
             className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            onChange={(e) => {
+              const nextDueDate = e.target.value;
+              setDueDate(nextDueDate);
+
+              if (!nextDueDate) setDueTime("");
+            }}
             min={today}
           />
         </div>
@@ -117,12 +118,18 @@ export default function AddTaskForm({
         {dueDate ? (
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">Time</Label>
-            <Input
-              type="time"
-              className="h-11 border-input bg-background text-foreground focus-visible:ring-2 focus-visible:ring-ring/20"
+            <select
+              className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
               value={dueTime}
               onChange={(e) => setDueTime(e.target.value)}
-            />
+            >
+              <option value="">Select a time</option>
+              {TIME_OPTIONS.map((timeOption) => (
+                <option key={timeOption} value={timeOption}>
+                  {timeOption}
+                </option>
+              ))}
+            </select>
           </div>
         ) : (
           <div className="hidden sm:block" />
