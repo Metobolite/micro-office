@@ -1,6 +1,11 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import {
+  getLocalDateTimeParts,
+  localDateTimeToISOString,
+  TIME_OPTIONS,
+} from "@/app/lib/dateTime";
 import type { TaskEditorProps } from "@/app/types/task";
 import { useState } from "react";
 
@@ -9,18 +14,15 @@ export default function TaskEditor({
   onSave,
   onCancel,
 }: TaskEditorProps) {
+  const initialDueDateTime = getLocalDateTimeParts(task.due_date);
   const [editTitle, setEditTitle] = useState(task.title || "");
   const [editDescription, setEditDescription] = useState(
     task.description || "",
   );
   const [editPriority, setEditPriority] = useState(task.priority || "low");
 
-  const [editDueDate, setEditDueDate] = useState(
-    task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : "",
-  );
-  const [editDueTime, setEditDueTime] = useState(
-    task.due_date ? new Date(task.due_date).toISOString().slice(11, 16) : "",
-  );
+  const [editDueDate, setEditDueDate] = useState(initialDueDateTime.date);
+  const [editDueTime, setEditDueTime] = useState(initialDueDateTime.time);
 
   const handleSave = async () => {
     if (!editTitle) {
@@ -28,13 +30,10 @@ export default function TaskEditor({
       return;
     }
 
-    let dueDateTime: string | null = null;
-    if (editDueDate) {
-      const fullDate = editDueTime
-        ? `${editDueDate}T${editDueTime}:00`
-        : editDueDate;
-      dueDateTime = new Date(fullDate).toISOString();
-    }
+    const dueDateTime = localDateTimeToISOString(
+      editDueDate,
+      editDueTime,
+    );
 
     const { error } = await supabase
       .from("tasks")
@@ -82,16 +81,30 @@ export default function TaskEditor({
       <input
         type="date"
         value={editDueDate}
-        onChange={(e) => setEditDueDate(e.target.value)}
+        onChange={(e) => {
+          const nextDueDate = e.target.value;
+          setEditDueDate(nextDueDate);
+
+          if (!nextDueDate) setEditDueTime("");
+        }}
         className="w-full rounded border border-input bg-background p-2 text-foreground"
       />
       {editDueDate && (
-        <input
-          type="time"
+        <select
           value={editDueTime}
           onChange={(e) => setEditDueTime(e.target.value)}
           className="w-full rounded border border-input bg-background p-2 text-foreground"
-        />
+        >
+          <option value="">Select a time</option>
+          {editDueTime && !TIME_OPTIONS.includes(editDueTime) && (
+            <option value={editDueTime}>{editDueTime}</option>
+          )}
+          {TIME_OPTIONS.map((timeOption) => (
+            <option key={timeOption} value={timeOption}>
+              {timeOption}
+            </option>
+          ))}
+        </select>
       )}
 
       <div className="flex justify-end gap-2 pt-2">

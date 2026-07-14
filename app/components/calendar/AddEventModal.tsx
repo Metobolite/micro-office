@@ -1,6 +1,11 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import {
+  formatTimeValue,
+  TIME_OPTIONS,
+  TIME_STEP_MINUTES,
+} from "@/app/lib/dateTime";
 import type { AddEventModalProps } from "@/app/types/EventType";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,15 +22,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const TIME_STEP_MINUTES = 30;
 const MAX_DURATION_HOURS = 10;
-
-const formatTimeValue = (totalMinutes: number) => {
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-};
 
 const formatDurationLabel = (totalMinutes: number) => {
   const hours = Math.floor(totalMinutes / 60);
@@ -37,11 +34,6 @@ const formatDurationLabel = (totalMinutes: number) => {
 
   return `${hourLabel} ${minutes} minutes`;
 };
-
-const timeOptions = Array.from(
-  { length: (24 * 60) / TIME_STEP_MINUTES },
-  (_, index) => formatTimeValue(index * TIME_STEP_MINUTES),
-);
 
 const durationOptions = Array.from(
   { length: (MAX_DURATION_HOURS * 60) / TIME_STEP_MINUTES },
@@ -173,7 +165,7 @@ export default function AddEventModal({
             <option value="" disabled>
               Select a time
             </option>
-            {timeOptions.map((timeOption) => (
+            {TIME_OPTIONS.map((timeOption) => (
               <option key={timeOption} value={timeOption}>
                 {timeOption}
               </option>

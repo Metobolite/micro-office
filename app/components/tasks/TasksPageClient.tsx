@@ -1,6 +1,11 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
+import {
+  getLocalDateTimeParts,
+  localDateTimeToISOString,
+  TIME_OPTIONS,
+} from "@/app/lib/dateTime";
 import type {
   Task,
   TaskPriority,
@@ -102,14 +107,14 @@ export default function TasksPageClient({
   };
 
   const startEdit = (task: Task) => {
+    const { date, time } = getLocalDateTimeParts(task.due_date);
+
     setEditingTask(task);
     setEditTitle(task.title);
     setEditDescription(task.description);
     setEditPriority(task.priority);
-    setEditDueDate(
-      task.due_date ? new Date(task.due_date).toISOString().slice(0, 10) : "",
-    );
-    setEditDueTime(task.due_date ? task.due_date.slice(11, 16) : "");
+    setEditDueDate(date);
+    setEditDueTime(time);
   };
 
   const cancelEdit = () => {
@@ -129,11 +134,7 @@ export default function TasksPageClient({
       return;
     }
 
-    const fullDate = editDueDate
-      ? editDueTime
-        ? `${editDueDate}T${editDueTime}:00`
-        : `${editDueDate}T00:00:00`
-      : null;
+    const dueDateTime = localDateTimeToISOString(editDueDate, editDueTime);
 
     if (editDueDate && editDueDate < today) {
       toast.error("Date cannot be in the past.");
@@ -146,7 +147,7 @@ export default function TasksPageClient({
         title: editTitle,
         description: editDescription,
         priority: editPriority,
-        due_date: fullDate,
+        due_date: dueDateTime,
       })
       .eq("id", editingTask.id)
       .eq("team_id", teamId);
@@ -162,7 +163,7 @@ export default function TasksPageClient({
                 title: editTitle,
                 description: editDescription,
                 priority: editPriority,
-                due_date: fullDate,
+                due_date: dueDateTime,
               }
             : task,
         ),
@@ -386,26 +387,54 @@ export default function TasksPageClient({
                                         type="date"
                                         className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
                                         value={editDueDate}
-                                        onChange={(e) =>
-                                          setEditDueDate(e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                          const nextDueDate = e.target.value;
+                                          setEditDueDate(nextDueDate);
+
+                                          if (!nextDueDate) {
+                                            setEditDueTime("");
+                                          }
+                                        }}
                                         min={today}
                                       />
                                     </div>
 
-                                    <div className="space-y-2">
-                                      <label className="text-sm font-medium text-foreground">
-                                        Time
-                                      </label>
-                                      <input
-                                        type="time"
-                                        className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-                                        value={editDueTime}
-                                        onChange={(e) =>
-                                          setEditDueTime(e.target.value)
-                                        }
-                                      />
-                                    </div>
+                                    {editDueDate ? (
+                                      <div className="space-y-2">
+                                        <label className="text-sm font-medium text-foreground">
+                                          Time
+                                        </label>
+                                        <select
+                                          className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
+                                          value={editDueTime}
+                                          onChange={(e) =>
+                                            setEditDueTime(e.target.value)
+                                          }
+                                        >
+                                          <option value="">
+                                            Select a time
+                                          </option>
+                                          {editDueTime &&
+                                            !TIME_OPTIONS.includes(
+                                              editDueTime,
+                                            ) && (
+                                              <option value={editDueTime}>
+                                                {editDueTime}
+                                              </option>
+                                            )}
+                                          {TIME_OPTIONS.map((timeOption) => (
+                                            <option
+                                              key={timeOption}
+                                              value={timeOption}
+                                            >
+                                              {timeOption}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    ) : (
+                                      <div className="hidden sm:block" />
+                                    )}
                                   </div>
 
                                   <div className="flex flex-wrap justify-end gap-2 pt-1">
