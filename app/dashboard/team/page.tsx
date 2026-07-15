@@ -13,9 +13,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Mail, MapPin, MoreHorizontal, Phone } from "lucide-react";
 import { redirect } from "next/navigation";
 
-export default async function TeamPage({
-  searchParams,
-}: TeamSearchPageProps) {
+export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {
@@ -62,7 +60,6 @@ export default async function TeamPage({
     name: member.name || "Member",
     email: member.email || "test@example.com",
     phone: member.phone || "+90 555 000 0000",
-    location: "Turkey",
     avatar: member.avatar_url || "/placeholder.svg",
     joined_at: member.joined_at
       ? new Date(member.joined_at).toLocaleString("en-US", {
@@ -169,10 +166,6 @@ export default async function TeamPage({
                   <div className="flex items-center space-x-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{member.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{member.location}</span>
                   </div>
                 </div>
 
