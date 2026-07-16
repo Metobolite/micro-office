@@ -1,5 +1,8 @@
+import type { TeamPresenceProfile } from "@/app/types/presence";
+
 export interface Message {
   id: string;
+  team_id: string;
   content: string;
   user_id: string;
   user_name: string;
@@ -10,4 +13,6 @@ export type TeamChatProps = {
   userId: string;
   userName: string;
   teamId: string;
+  members: TeamPresenceProfile[];
+  membersLoaded: boolean;
 };

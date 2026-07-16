@@ -6,6 +6,7 @@ import {
   getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
 import type { TeamSearchPageProps } from "@/app/types/team";
+import type { TeamPresenceProfile } from "@/app/types/presence";
 
 export default async function DashboardPage({
   searchParams,
@@ -38,11 +39,35 @@ export default async function DashboardPage({
     redirect("/teams");
   }
 
+  const { data: memberRows, error: memberRowsError } = await supabase
+    .from("team_members")
+    .select("user_id, name, email, avatar_url")
+    .eq("team_id", activeTeamId)
+    .order("joined_at", { ascending: true });
+
+  const members: TeamPresenceProfile[] = (memberRows ?? []).flatMap(
+    (member) => {
+      if (!member.user_id) return [];
+
+      return [
+        {
+          userId: member.user_id,
+          name:
+            member.name || member.email?.split("@")[0] || "Team member",
+          avatarUrl: member.avatar_url,
+        },
+      ];
+    },
+  );
+
   return (
     <TeamChat
+      key={activeTeamId}
       userId={user.id}
       userName={user.user_metadata?.full_name || user.email || "User"}
       teamId={activeTeamId}
+      members={members}
+      membersLoaded={!memberRowsError}
     />
   );
 }
