@@ -285,9 +285,11 @@ export function TeamPresenceProvider({
           throw new Error("No authenticated session is available for Presence.");
         }
 
-        // Realtime authorization is evaluated with this JWT. Passing it
-        // explicitly prevents a private channel from briefly joining as anon.
-        await supabase.realtime.setAuth(session.access_token);
+        // Ask the Supabase client for its current access token instead of
+        // pinning the session snapshot above. This keeps the Realtime join on
+        // the same refresh path as PostgREST if Auth rotated the token while
+        // this connection was being prepared.
+        await supabase.realtime.setAuth();
 
         const { data: canAccess, error: accessError } = await supabase.rpc(
           "can_access_team_presence",
