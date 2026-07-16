@@ -25,7 +25,8 @@ export async function getTeamContext(
 		.from("team_members")
 		.select("team_id, role, status, joined_at, user_id, name, email, phone, avatar_url")
 		.eq("user_id", userId)
-		.order("joined_at", { ascending: false });
+		.order("joined_at", { ascending: false })
+		.order("team_id", { ascending: true });
 
 	const teamIds = Array.from(
 		new Set((memberships || []).map((membership) => membership.team_id))

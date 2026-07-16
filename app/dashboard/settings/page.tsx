@@ -32,12 +32,8 @@ export default async function SettingsPage({
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const {
-    activeTeam,
-    activeTeamId,
-    isRequestedTeamIdValid,
-    memberships,
-  } = await getTeamContext(supabase, user.id, requestedTeamId);
+  const { activeTeam, activeTeamId, isRequestedTeamIdValid, memberships } =
+    await getTeamContext(supabase, user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
@@ -60,7 +56,7 @@ export default async function SettingsPage({
   const role = activeMembership?.role || "member";
 
   return (
-    <div className="flex h-screen min-h-0 flex-col bg-background">
+    <div className="flex h-screen min-h-0 flex-col">
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />

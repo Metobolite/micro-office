@@ -1,21 +1,17 @@
 import { AddTeamMemberForm } from "@/app/components/team/AddTeamMemberForm";
+import { TeamPresenceView } from "@/app/components/team/TeamPresenceView";
 import { createClient } from "@/app/lib/supabaseServer";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
 import type { TeamSearchPageProps } from "@/app/types/team";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TeamMemberPresenceCard } from "@/app/types/presence";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Mail, MapPin, MoreHorizontal, Phone } from "lucide-react";
 import { redirect } from "next/navigation";
 
-export default async function TeamPage({
-  searchParams,
-}: TeamSearchPageProps) {
+export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
   const supabase = await createClient();
 
   const {
@@ -52,19 +48,20 @@ export default async function TeamPage({
   const { data } = await supabase
     .from("team_members")
     .select(
-      "team_id, user_id, role, status, joined_at, name, email, phone, avatar_url",
+      "team_id, user_id, role, joined_at, name, email, phone, avatar_url",
     )
     .eq("team_id", activeTeamId)
     .order("joined_at", { ascending: false });
 
-  const teamMembers = (data || []).map((member) => ({
-    ...member,
+  const teamMembers: TeamMemberPresenceCard[] = (data || []).map((member) => ({
+    teamId: member.team_id,
+    userId: member.user_id,
+    role: member.role,
     name: member.name || "Member",
     email: member.email || "test@example.com",
     phone: member.phone || "+90 555 000 0000",
-    location: "Turkey",
-    avatar: member.avatar_url || "/placeholder.svg",
-    joined_at: member.joined_at
+    avatarUrl: member.avatar_url,
+    joinedLabel: member.joined_at
       ? new Date(member.joined_at).toLocaleString("en-US", {
           year: "numeric",
           month: "long",
@@ -89,103 +86,7 @@ export default async function TeamPage({
         </div>
       </header>
 
-      <div className="flex-1 p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold">{teamMembers.length}</div>
-              <p className="text-sm text-muted-foreground">Total Members</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">
-                {teamMembers.filter((m) => m.status === "online").length}
-              </div>
-              <p className="text-sm text-muted-foreground">Active</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-yellow-600">
-                {teamMembers.filter((m) => m.status === "away").length}
-              </div>
-              <p className="text-sm text-muted-foreground">Away</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-muted-foreground">
-                {teamMembers.filter((m) => m.status === "offline").length}
-              </div>
-              <p className="text-sm text-muted-foreground">Offline</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {teamMembers.map((member) => (
-            <Card
-              key={`${member.team_id}-${member.user_id ?? member.email}`}
-              className="hover:shadow-md transition-shadow"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="relative">
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src={member.avatar} />
-                      <AvatarFallback>
-                        {member.name
-                          .split(" ")
-                          .map((n: string) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div
-                      className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background ${
-                        member.status === "online"
-                          ? "bg-green-500"
-                          : member.status === "away"
-                            ? "bg-yellow-500"
-                            : "bg-gray-400"
-                      }`}
-                    />
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div>
-                  <CardTitle className="text-lg">{member.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{member.role}</p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">{member.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{member.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{member.location}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">
-                    Joined: {member.joined_at}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      <TeamPresenceView members={teamMembers} teamId={activeTeamId} />
     </div>
   );
 }
