@@ -11,20 +11,16 @@ export interface Task {
   due_date?: string | null;
 }
 
-export type TaskEditorProps = {
-  task: Task;
-  onSave: () => void;
-  onCancel: () => void;
-};
-
 export type AddTaskFormProps = {
   userId: string;
-  onTaskAdded: () => void;
+  onTaskAdded: (task: Task) => void;
   teamId: string;
+  sortOrder: number;
 };
 
 export type TasksPageClientProps = {
   userId: string;
   teamId: string;
   initialTasks: Task[];
+  initialLoadFailed?: boolean;
 };
