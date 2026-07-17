@@ -2,6 +2,14 @@ export const TIME_STEP_MINUTES = 30;
 
 const padTimePart = (value: number) => String(value).padStart(2, "0");
 
+export const getLocalDateInputValue = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = padTimePart(date.getMonth() + 1);
+  const day = padTimePart(date.getDate());
+
+  return `${year}-${month}-${day}`;
+};
+
 export const formatTimeValue = (totalMinutes: number) => {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;

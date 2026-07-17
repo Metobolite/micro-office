@@ -27,11 +27,8 @@ export default async function TasksPage({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
 
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    supabase,
-    user.id,
-    requestedTeamId,
-  );
+  const { activeTeamId, activeTeam, isRequestedTeamIdValid } =
+    await getTeamContext(supabase, user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
@@ -41,7 +38,7 @@ export default async function TasksPage({
     redirect("/teams");
   }
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error: tasksError } = await supabase
     .from("tasks")
     .select("*")
     .eq("user_id", user.id)
@@ -50,18 +47,23 @@ export default async function TasksPage({
     .order("sort_order", { ascending: true });
 
   return (
-    <div>
+    <div className="flex h-full min-h-0 flex-col">
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
-        <div className="flex flex-1 items-center justify-between">
+        <div>
           <h1 className="text-xl font-semibold">Tasks</h1>
+          {activeTeam?.name ? (
+            <p className="text-xs text-muted-foreground">{activeTeam.name}</p>
+          ) : null}
         </div>
       </header>
       <TasksPageClient
+        key={activeTeamId}
         userId={user.id}
         teamId={activeTeamId}
         initialTasks={(tasks as Task[]) ?? []}
+        initialLoadFailed={Boolean(tasksError)}
       />
     </div>
   );

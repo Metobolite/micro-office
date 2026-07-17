@@ -1,11 +1,6 @@
 "use client";
 
 import { supabase } from "@/app/lib/supabase";
-import {
-  getLocalDateTimeParts,
-  localDateTimeToISOString,
-  TIME_OPTIONS,
-} from "@/app/lib/dateTime";
 import type {
   Task,
   TaskPriority,
@@ -13,536 +8,563 @@ import type {
   TaskStatus,
 } from "@/app/types/task";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/ui/modal";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  DragDropContext,
-  Draggable,
-  Droppable,
-  type DropResult,
-} from "@hello-pangea/dnd";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import type { DropResult } from "@hello-pangea/dnd";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  Filter,
+  ListTodo,
+  Plus,
+  Search,
+  Sparkles,
+  X,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import AddTaskForm from "./AddTaskForm";
-
-const statusLabels: Record<TaskStatus, string> = {
-  todo: "To Do",
-  in_progress: "In Progress",
-  done: "Done",
-};
-
-const taskStatuses: TaskStatus[] = ["todo", "in_progress", "done"];
+import DeleteTaskDialog from "./DeleteTaskDialog";
+import EditTaskDialog from "./EditTaskDialog";
+import TaskBoard from "./TaskBoard";
+import {
+  getDueDateMeta,
+  getSortedTasks,
+  TASK_PRIORITY_CONFIG,
+  TASK_STATUSES,
+} from "./task-ui";
 
 export default function TasksPageClient({
   userId,
   teamId,
   initialTasks,
+  initialLoadFailed = false,
 }: TasksPageClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [showAddModal, setShowAddModal] = useState(false);
-
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editPriority, setEditPriority] =
-    useState<TaskPriority>("medium");
-  const [editDueDate, setEditDueDate] = useState("");
-  const [editDueTime, setEditDueTime] = useState("");
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<
+    TaskPriority | "all"
+  >("all");
 
-  function formatDate(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
+  const tasksByStatus = useMemo<Record<TaskStatus, Task[]>>(
+    () => ({
+      todo: getSortedTasks(tasks, "todo"),
+      in_progress: getSortedTasks(tasks, "in_progress"),
+      done: getSortedTasks(tasks, "done"),
+    }),
+    [tasks],
+  );
 
-  const today = new Date().toISOString().split("T")[0];
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
+  const hasActiveFilters =
+    normalizedSearchQuery.length > 0 || priorityFilter !== "all";
 
-  const fetchTasks = async () => {
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("team_id", teamId)
-      .order("status", { ascending: true })
-      .order("sort_order", { ascending: true });
+  const visibleTasksByStatus = useMemo<Record<TaskStatus, Task[]>>(() => {
+    const filterTasks = (status: TaskStatus) =>
+      tasksByStatus[status].filter((task) => {
+        const matchesPriority =
+          priorityFilter === "all" || task.priority === priorityFilter;
+        const searchableText = `${task.title} ${task.description ?? ""}`.toLocaleLowerCase();
+        const matchesSearch =
+          !normalizedSearchQuery ||
+          searchableText.includes(normalizedSearchQuery);
 
-    if (error) {
-      console.error("Error:", error);
-    } else {
-      setTasks(data || []);
-    }
-  };
-
-  const deleteTask = async (taskId: string) => {
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", taskId)
-      .eq("team_id", teamId);
-    if (error) {
-      alert("Task could not be deleted: " + error.message);
-    } else {
-      setTasks((prev) => prev.filter((task) => task.id !== taskId));
-    }
-  };
-
-  const confirmDelete = () => {
-    if (!taskToDelete) return;
-    deleteTask(taskToDelete.id);
-    setShowDeleteConfirm(false);
-    setTaskToDelete(null);
-  };
-
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setTaskToDelete(null);
-  };
-
-  const startEdit = (task: Task) => {
-    const { date, time } = getLocalDateTimeParts(task.due_date);
-
-    setEditingTask(task);
-    setEditTitle(task.title);
-    setEditDescription(task.description);
-    setEditPriority(task.priority);
-    setEditDueDate(date);
-    setEditDueTime(time);
-  };
-
-  const cancelEdit = () => {
-    setEditingTask(null);
-    setEditTitle("");
-    setEditDescription("");
-    setEditPriority("medium");
-    setEditDueDate("");
-    setEditDueTime("");
-  };
-
-  const saveEdit = async () => {
-    if (!editingTask) return;
-
-    if (!editTitle.trim()) {
-      toast.error("Title cannot be empty.");
-      return;
-    }
-
-    const dueDateTime = localDateTimeToISOString(editDueDate, editDueTime);
-
-    if (editDueDate && editDueDate < today) {
-      toast.error("Date cannot be in the past.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("tasks")
-      .update({
-        title: editTitle,
-        description: editDescription,
-        priority: editPriority,
-        due_date: dueDateTime,
-      })
-      .eq("id", editingTask.id)
-      .eq("team_id", teamId);
-
-    if (error) {
-      toast.error("Task could not be updated: " + error.message);
-    } else {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task.id === editingTask.id
-            ? {
-                ...task,
-                title: editTitle,
-                description: editDescription,
-                priority: editPriority,
-                due_date: dueDateTime,
-              }
-            : task,
-        ),
-      );
-      toast.success("Task updated successfully.");
-      cancelEdit();
-    }
-  };
-
-  const handleDragEnd = async (result: DropResult) => {
-    const { source, destination } = result;
-    if (!destination) return;
-
-    const sourceStatus = source.droppableId as Task["status"];
-    const destStatus = destination.droppableId as Task["status"];
-
-    if (sourceStatus === destStatus) {
-      const tasksInColumn = tasks
-        .filter((t) => t.status === sourceStatus)
-        .sort((a, b) => a.sort_order - b.sort_order);
-
-      const [moved] = tasksInColumn.splice(source.index, 1);
-      tasksInColumn.splice(destination.index, 0, moved);
-
-      const updatedTasks = tasks.map((t) =>
-        t.status !== sourceStatus
-          ? t
-          : {
-              ...t,
-              sort_order: tasksInColumn.findIndex((x) => x.id === t.id),
-            },
-      );
-
-      setTasks(updatedTasks);
-
-      for (const task of tasksInColumn) {
-        await supabase
-          .from("tasks")
-          .update({ sort_order: tasksInColumn.indexOf(task) })
-          .eq("id", task.id)
-          .eq("team_id", teamId);
-      }
-    } else {
-      const sourceTasks = tasks
-        .filter((t) => t.status === sourceStatus)
-        .sort((a, b) => a.sort_order - b.sort_order);
-      const destTasks = tasks
-        .filter((t) => t.status === destStatus)
-        .sort((a, b) => a.sort_order - b.sort_order);
-
-      const [moved] = sourceTasks.splice(source.index, 1);
-      moved.status = destStatus;
-      destTasks.splice(destination.index, 0, moved);
-
-      const updatedTasks = tasks.map((t) => {
-        if (t.id === moved.id) {
-          return {
-            ...moved,
-            sort_order: destination.index,
-          };
-        }
-        if (t.status === sourceStatus) {
-          const index = sourceTasks.findIndex((x) => x.id === t.id);
-          return { ...t, sort_order: index };
-        }
-        if (t.status === destStatus) {
-          const index = destTasks.findIndex((x) => x.id === t.id);
-          return { ...t, sort_order: index };
-        }
-        return t;
+        return matchesPriority && matchesSearch;
       });
 
-      setTasks(updatedTasks);
+    return {
+      todo: filterTasks("todo"),
+      in_progress: filterTasks("in_progress"),
+      done: filterTasks("done"),
+    };
+  }, [normalizedSearchQuery, priorityFilter, tasksByStatus]);
 
-      const updates = [...sourceTasks, ...destTasks];
-      for (const task of updates) {
-        await supabase
-          .from("tasks")
-          .update({
-            sort_order:
-              task.status === moved.status
-                ? destTasks.findIndex((x) => x.id === task.id)
-                : sourceTasks.findIndex((x) => x.id === task.id),
-            status: task.status,
-          })
-          .eq("id", task.id)
-          .eq("team_id", teamId);
-      }
+  const completedCount = tasksByStatus.done.length;
+  const overdueCount = tasks.filter(
+    (task) => getDueDateMeta(task)?.isOverdue,
+  ).length;
+  const completionRate = tasks.length
+    ? Math.round((completedCount / tasks.length) * 100)
+    : 0;
+  const visibleTaskCount = TASK_STATUSES.reduce(
+    (total, status) => total + visibleTasksByStatus[status].length,
+    0,
+  );
+  const nextTodoSortOrder =
+    tasksByStatus.todo.reduce(
+      (highestOrder, task) =>
+        Math.max(
+          highestOrder,
+          Number.isFinite(task.sort_order) ? task.sort_order : -1,
+        ),
+      -1,
+    ) + 1;
+
+  const summaryCards = [
+    {
+      label: "Total tasks",
+      value: tasks.length,
+      detail: `${tasksByStatus.todo.length} waiting`,
+      icon: ListTodo,
+      iconClassName: "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+    },
+    {
+      label: "In progress",
+      value: tasksByStatus.in_progress.length,
+      detail: "Currently active",
+      icon: Clock3,
+      iconClassName: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    },
+    {
+      label: "Overdue",
+      value: overdueCount,
+      detail: overdueCount ? "Needs attention" : "All on track",
+      icon: AlertCircle,
+      iconClassName: "bg-red-500/10 text-red-600 dark:text-red-400",
+    },
+    {
+      label: "Completed",
+      value: completedCount,
+      detail: `${completionRate}% of all tasks`,
+      icon: CheckCircle2,
+      iconClassName:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    },
+  ];
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setPriorityFilter("all");
+  };
+
+  const handleDragEnd = async ({
+    source,
+    destination,
+    draggableId,
+  }: DropResult) => {
+    if (
+      !destination ||
+      isReordering ||
+      (source.droppableId === destination.droppableId &&
+        source.index === destination.index)
+    ) {
+      return;
+    }
+
+    const sourceStatus = source.droppableId as TaskStatus;
+    const destinationStatus = destination.droppableId as TaskStatus;
+    const sourceColumn = [...tasksByStatus[sourceStatus]];
+    const sourceTaskIndex = sourceColumn.findIndex(
+      (task) => task.id === draggableId,
+    );
+
+    if (sourceTaskIndex < 0) return;
+
+    const [removedTask] = sourceColumn.splice(sourceTaskIndex, 1);
+    const destinationColumn =
+      sourceStatus === destinationStatus
+        ? sourceColumn
+        : [...tasksByStatus[destinationStatus]];
+    const visibleDestinationIds = visibleTasksByStatus[destinationStatus]
+      .filter((task) => task.id !== draggableId)
+      .map((task) => task.id);
+
+    let destinationIndex = destinationColumn.length;
+    const taskAtDestination = visibleDestinationIds[destination.index];
+
+    if (taskAtDestination) {
+      destinationIndex = destinationColumn.findIndex(
+        (task) => task.id === taskAtDestination,
+      );
+    } else if (visibleDestinationIds.length) {
+      const lastVisibleTaskId =
+        visibleDestinationIds[visibleDestinationIds.length - 1];
+      destinationIndex =
+        destinationColumn.findIndex(
+          (task) => task.id === lastVisibleTaskId,
+        ) + 1;
+    }
+
+    destinationColumn.splice(destinationIndex, 0, {
+      ...removedTask,
+      status: destinationStatus,
+    });
+
+    const reorderedTasks = new Map<string, Task>();
+    sourceColumn.forEach((task, index) => {
+      reorderedTasks.set(task.id, {
+        ...task,
+        status: sourceStatus,
+        sort_order: index,
+      });
+    });
+    destinationColumn.forEach((task, index) => {
+      reorderedTasks.set(task.id, {
+        ...task,
+        status: destinationStatus,
+        sort_order: index,
+      });
+    });
+
+    const previousTasks = tasks;
+    const nextTasks = tasks.map(
+      (task) => reorderedTasks.get(task.id) ?? task,
+    );
+    const previousTasksById = new Map(
+      previousTasks.map((task) => [task.id, task]),
+    );
+    const changedTasks = nextTasks.filter((task) => {
+      const previousTask = previousTasksById.get(task.id);
+      return (
+        previousTask?.status !== task.status ||
+        previousTask.sort_order !== task.sort_order
+      );
+    });
+
+    if (!changedTasks.length) return;
+
+    setTasks(nextTasks);
+    setIsReordering(true);
+
+    try {
+      const updateResults = await Promise.all(
+        changedTasks.map((task) =>
+          supabase
+            .from("tasks")
+            .update({ status: task.status, sort_order: task.sort_order })
+            .eq("id", task.id)
+            .eq("user_id", userId)
+            .eq("team_id", teamId),
+        ),
+      );
+      const failedUpdate = updateResults.find((result) => result.error);
+
+      if (!failedUpdate?.error) return;
+
+      const successfullyUpdatedTasks = changedTasks.filter(
+        (_, index) => !updateResults[index].error,
+      );
+      const rollbackResults = await Promise.all(
+        successfullyUpdatedTasks.map(async (task) => {
+          const previousTask = previousTasksById.get(task.id);
+          if (!previousTask) return { error: null };
+
+          return supabase
+            .from("tasks")
+            .update({
+              status: previousTask.status,
+              sort_order: previousTask.sort_order,
+            })
+            .eq("id", task.id)
+            .eq("user_id", userId)
+            .eq("team_id", teamId);
+        }),
+      );
+      const rollbackFailed = rollbackResults.some((result) => result.error);
+
+      const { data: refreshedTasks, error: refreshError } = await supabase
+        .from("tasks")
+        .select("id, title, description, status, priority, sort_order, due_date")
+        .eq("user_id", userId)
+        .eq("team_id", teamId)
+        .order("status", { ascending: true })
+        .order("sort_order", { ascending: true });
+
+      setTasks(
+        !refreshError && refreshedTasks
+          ? (refreshedTasks as Task[])
+          : previousTasks,
+      );
+      toast.error("Task order could not be saved.", {
+        description:
+          rollbackFailed || refreshError
+            ? "The board could not be fully resynced. Please refresh the page before reordering again."
+            : failedUpdate.error.message,
+      });
+    } catch (error) {
+      const { data: refreshedTasks, error: refreshError } = await supabase
+        .from("tasks")
+        .select("id, title, description, status, priority, sort_order, due_date")
+        .eq("user_id", userId)
+        .eq("team_id", teamId)
+        .order("status", { ascending: true })
+        .order("sort_order", { ascending: true });
+
+      setTasks(
+        !refreshError && refreshedTasks
+          ? (refreshedTasks as Task[])
+          : previousTasks,
+      );
+      toast.error("Task order could not be saved.", {
+        description: refreshError
+          ? "The board could not be resynced. Please refresh the page before reordering again."
+          : error instanceof Error
+            ? error.message
+            : "Please refresh the page and try again.",
+      });
+    } finally {
+      setIsReordering(false);
     }
   };
 
-  const getTasksByStatus = (status: TaskStatus) =>
-    tasks
-      .filter((task) => task.status === status)
-      .sort((a, b) => a.sort_order - b.sort_order);
-
-  const getPriorityBadgeColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-600 text-white";
-      case "medium":
-        return "bg-yellow-500 text-black";
-      case "low":
-        return "bg-green-600 text-white";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
+  const handleAiOptimize = () => {
+    toast.info("AI optimization is the next step.", {
+      description:
+        "The board is ready for the ChatGPT workflow. No tasks were changed yet.",
+    });
   };
 
   return (
     <>
-      <div className="relative min-h-screen p-6 text-foreground">
-        <div className="mb-4 flex items-center justify-end">
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="h-11 rounded-full px-5 font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.12)]"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Task
-          </Button>
-        </div>
-
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            {taskStatuses.map((status) => (
-              <div
-                key={status}
-                className="flex flex-col bg-card p-4 rounded-2xl min-h-[300px] shadow-md text-card-foreground"
-              >
-                <h2 className="font-bold text-xl mb-4 capitalize sticky top-0">
-                  {statusLabels[status] ?? status.replace("_", " ")}{" "}
-                  <span className="ml-2 rounded-lg bg-muted px-2 font-semibold text-muted-foreground">
-                    {getTasksByStatus(status).length}
-                  </span>
-                </h2>
-                <Droppable droppableId={status}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="flex-1 min-h-[100px]"
-                    >
-                      {getTasksByStatus(status).map((task, index) => (
-                        <Draggable
-                          key={task.id}
-                          draggableId={task.id}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="relative mb-3 min-h-[80px] rounded-2xl border bg-background p-4 text-foreground shadow-[0_10px_30px_rgba(15,23,42,0.08)]"
-                            >
-                              {editingTask?.id === task.id ? (
-                                <div className="space-y-3 rounded-2xl border bg-card p-4 text-card-foreground shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all duration-300 ease-in-out">
-                                  <div className="space-y-1">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                                      Edit Task
-                                    </p>
-                                    <h3 className="text-lg font-semibold text-foreground">
-                                      Update details
-                                    </h3>
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium text-foreground">
-                                      Title
-                                    </label>
-                                    <input
-                                      className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-                                      value={editTitle}
-                                      onChange={(e) =>
-                                        setEditTitle(e.target.value)
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium text-foreground">
-                                      Description
-                                    </label>
-                                    <textarea
-                                      className="min-h-[110px] w-full rounded-md border border-input bg-background px-3 py-2 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-                                      value={editDescription}
-                                      onChange={(e) =>
-                                        setEditDescription(e.target.value)
-                                      }
-                                    />
-                                  </div>
-
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium text-foreground">
-                                      Priority
-                                    </label>
-                                    <select
-                                      className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-                                      value={editPriority}
-                                      onChange={(e) =>
-                                        setEditPriority(
-                                          e.target.value as
-                                            | "low"
-                                            | "medium"
-                                            | "high",
-                                        )
-                                      }
-                                    >
-                                      <option value="low">Low</option>
-                                      <option value="medium">Medium</option>
-                                      <option value="high">High</option>
-                                    </select>
-                                  </div>
-
-                                  <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
-                                      <label className="text-sm font-medium text-foreground">
-                                        Due Date
-                                      </label>
-                                      <input
-                                        type="date"
-                                        className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-                                        value={editDueDate}
-                                        onChange={(e) => {
-                                          const nextDueDate = e.target.value;
-                                          setEditDueDate(nextDueDate);
-
-                                          if (!nextDueDate) {
-                                            setEditDueTime("");
-                                          }
-                                        }}
-                                        min={today}
-                                      />
-                                    </div>
-
-                                    {editDueDate ? (
-                                      <div className="space-y-2">
-                                        <label className="text-sm font-medium text-foreground">
-                                          Time
-                                        </label>
-                                        <select
-                                          className="h-11 w-full rounded-md border border-input bg-background px-3 text-foreground outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/20"
-                                          value={editDueTime}
-                                          onChange={(e) =>
-                                            setEditDueTime(e.target.value)
-                                          }
-                                        >
-                                          <option value="">
-                                            Select a time
-                                          </option>
-                                          {editDueTime &&
-                                            !TIME_OPTIONS.includes(
-                                              editDueTime,
-                                            ) && (
-                                              <option value={editDueTime}>
-                                                {editDueTime}
-                                              </option>
-                                            )}
-                                          {TIME_OPTIONS.map((timeOption) => (
-                                            <option
-                                              key={timeOption}
-                                              value={timeOption}
-                                            >
-                                              {timeOption}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </div>
-                                    ) : (
-                                      <div className="hidden sm:block" />
-                                    )}
-                                  </div>
-
-                                  <div className="flex flex-wrap justify-end gap-2 pt-1">
-                                    <button
-                                      onClick={saveEdit}
-                                      className="h-11 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-                                    >
-                                      Save
-                                    </button>
-                                    <button
-                                      onClick={cancelEdit}
-                                      className="h-11 rounded-full border bg-background px-4 text-sm font-semibold text-foreground transition hover:bg-accent hover:text-accent-foreground"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="transition-all duration-300 ease-in-out">
-                                  <div className="flex justify-between items-start">
-                                    <h3 className="font-semibold">
-                                      {task.title}
-                                    </h3>
-                                    <span
-                                      className={`text-xs px-2 py-1 rounded absolute bottom-2 right-2 ${getPriorityBadgeColor(
-                                        task.priority,
-                                      )}`}
-                                    >
-                                      {task.priority}
-                                    </span>
-                                  </div>
-                                  <p className="text-sm mt-1">
-                                    {task.description}
-                                  </p>
-                                  <p className="text-xs mt-1">
-                                    {!task.due_date || task.due_date === null
-                                      ? "No due date"
-                                      : formatDate(task.due_date)}
-                                  </p>
-                                  <div className="absolute top-2 right-2 flex gap-1">
-                                    <button
-                                      onClick={() => startEdit(task)}
-                                      className="rounded bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground transition duration-300 hover:bg-secondary/80"
-                                      title="Edit"
-                                    >
-                                      Edit
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setTaskToDelete(task);
-                                        setShowDeleteConfirm(true);
-                                      }}
-                                      className="rounded bg-destructive px-2 py-1 text-xs font-semibold text-white transition duration-300 hover:bg-destructive/90"
-                                      title="Delete"
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="space-y-6">
+          <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary/5 text-foreground">
+                  <ListTodo className="size-4" />
+                </span>
+                My tasks
               </div>
-            ))}
-          </div>
-        </DragDropContext>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Plan and prioritize your work
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Keep your workload visible, then drag tasks as work moves
+                forward.
+              </p>
+            </div>
+
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 border-violet-500/20 bg-violet-500/5 text-violet-700 hover:bg-violet-500/10 hover:text-violet-800 dark:text-violet-300 dark:hover:text-violet-200 sm:flex-none"
+                onClick={handleAiOptimize}
+              >
+                <Sparkles className="size-4" />
+                Optimize with AI
+              </Button>
+              <Button
+                type="button"
+                className="flex-1 sm:flex-none"
+                disabled={isReordering || initialLoadFailed}
+                onClick={() => setShowAddDialog(true)}
+              >
+                <Plus className="size-4" />
+                New task
+              </Button>
+            </div>
+          </section>
+
+          {initialLoadFailed ? (
+            <div
+              role="alert"
+              className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-600 dark:text-red-400" />
+              <div>
+                <p className="font-medium">Tasks could not be loaded.</p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Refresh the page before making changes to this board.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <section
+            aria-label="Task overview"
+            className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+          >
+            {summaryCards.map((summary) => {
+              const SummaryIcon = summary.icon;
+
+              return (
+                <Card key={summary.label} className="gap-0 py-0 shadow-sm">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <span
+                      className={cn(
+                        "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                        summary.iconClassName,
+                      )}
+                    >
+                      <SummaryIcon className="size-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {summary.label}
+                      </p>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-semibold tabular-nums">
+                          {summary.value}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {summary.detail}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </section>
+
+          <section
+            aria-label="Task filters"
+            className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-sm sm:flex-row sm:items-center"
+          >
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search tasks..."
+                aria-label="Search tasks"
+                className="pl-9"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex-1 sm:flex-none">
+                    <Filter className="size-4" />
+                    {priorityFilter === "all"
+                      ? "All priorities"
+                      : `${TASK_PRIORITY_CONFIG[priorityFilter].label} priority`}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Priority</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuRadioGroup
+                    value={priorityFilter}
+                    onValueChange={(value) =>
+                      setPriorityFilter(value as TaskPriority | "all")
+                    }
+                  >
+                    <DropdownMenuRadioItem value="all">
+                      All priorities
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="high">
+                      High priority
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="medium">
+                      Medium priority
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="low">
+                      Low priority
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {hasActiveFilters ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearFilters}
+                  aria-label="Clear task filters"
+                  title="Clear filters"
+                >
+                  <X className="size-4" />
+                </Button>
+              ) : null}
+
+              <span
+                className="ml-auto whitespace-nowrap text-xs text-muted-foreground sm:ml-1"
+                aria-live="polite"
+              >
+                {isReordering
+                  ? "Saving order..."
+                  : `${visibleTaskCount} ${visibleTaskCount === 1 ? "task" : "tasks"}`}
+              </span>
+            </div>
+          </section>
+
+          <TaskBoard
+            tasksByStatus={tasksByStatus}
+            visibleTasksByStatus={visibleTasksByStatus}
+            hasActiveFilters={hasActiveFilters}
+            isReordering={isReordering}
+            onDragEnd={handleDragEnd}
+            onEdit={setEditingTask}
+            onDelete={setTaskToDelete}
+          />
+        </div>
       </div>
 
-      <Modal show={showAddModal} onClose={() => setShowAddModal(false)}>
-        <AddTaskForm
-          userId={userId}
-          onTaskAdded={() => {
-            setShowAddModal(false);
-            fetchTasks();
-          }}
-          teamId={teamId}
-        />
-      </Modal>
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Create a new task</DialogTitle>
+            <DialogDescription>
+              Add the details now; you can reprioritize the task on the board
+              later.
+            </DialogDescription>
+          </DialogHeader>
+          <AddTaskForm
+            userId={userId}
+            teamId={teamId}
+            sortOrder={nextTodoSortOrder}
+            onTaskAdded={(task) => {
+              setTasks((currentTasks) => [...currentTasks, task]);
+              setShowAddDialog(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
-      {showDeleteConfirm && taskToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="modal-overlay w-full max-w-sm rounded border bg-card p-6 text-card-foreground shadow">
-            <h3 className="text-xl font-semibold mb-4">
-              Are you sure you want to delete &quot;{taskToDelete.title}&quot;?
-            </h3>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={confirmDelete}
-                className="rounded bg-destructive px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-destructive/90"
-              >
-                Yes, delete
-              </button>
-              <button
-                onClick={cancelDelete}
-                className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition duration-300 hover:bg-secondary/80"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <EditTaskDialog
+        key={editingTask?.id ?? "no-edit-task"}
+        task={editingTask}
+        userId={userId}
+        teamId={teamId}
+        onClose={() => setEditingTask(null)}
+        onSaved={(updatedTask) =>
+          setTasks((currentTasks) =>
+            currentTasks.map((task) =>
+              task.id === updatedTask.id ? updatedTask : task,
+            ),
+          )
+        }
+      />
+
+      <DeleteTaskDialog
+        key={taskToDelete?.id ?? "no-delete-task"}
+        task={taskToDelete}
+        userId={userId}
+        teamId={teamId}
+        onClose={() => setTaskToDelete(null)}
+        onDeleted={(taskId) =>
+          setTasks((currentTasks) =>
+            currentTasks.filter((task) => task.id !== taskId),
+          )
+        }
+      />
     </>
   );
 }
