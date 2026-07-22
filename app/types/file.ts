@@ -27,6 +27,7 @@ export type FilesPageProps = {
   userId: string;
   userName: string;
   teamId: string;
+  teamName: string | null;
 };
 
 export type DeleteConfirmationDialogProps = {

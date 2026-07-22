@@ -24,11 +24,8 @@ export default async function Page({
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
 
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    supabase,
-    user.id,
-    requestedTeamId,
-  );
+  const { activeTeamId, activeTeam, isRequestedTeamIdValid } =
+    await getTeamContext(supabase, user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
@@ -43,6 +40,7 @@ export default async function Page({
       userId={user.id}
       userName={user.user_metadata?.full_name || user.email || "User"}
       teamId={activeTeamId}
+      teamName={activeTeam?.name ?? null}
     />
   );
 }
