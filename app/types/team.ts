@@ -3,7 +3,6 @@ export type TeamRole = "owner" | "admin" | "member";
 export type TeamRecord = {
   id: string;
   name: string | null;
-  owner_id: string | null;
 };
 
 export type TeamMembershipRecord = {
@@ -20,10 +19,8 @@ export type TeamMembershipRecord = {
 
 export type TeamContext = {
   memberships: TeamMembershipRecord[];
-  teams: TeamRecord[];
   teamIds: string[];
   activeTeamId: string | null;
-  activeTeam: TeamRecord | null;
   isRequestedTeamIdValid: boolean;
 };
 
@@ -57,4 +54,6 @@ export type AddTeamMemberFormProps = {
 
 export type CreateTeamFormProps = {
   userId: string;
+  userName: string;
+  userEmail: string;
 };

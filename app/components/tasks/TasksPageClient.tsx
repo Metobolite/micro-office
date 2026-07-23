@@ -39,11 +39,9 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import AddTaskForm from "./AddTaskForm";
-import DeleteTaskDialog from "./DeleteTaskDialog";
-import EditTaskDialog from "./EditTaskDialog";
 import TaskBoard from "./TaskBoard";
 import {
   getDueDateMeta,
@@ -51,6 +49,14 @@ import {
   TASK_PRIORITY_CONFIG,
   TASK_STATUSES,
 } from "./task-ui";
+
+const AddTaskForm = dynamic(() => import("./AddTaskForm"), { ssr: false });
+const EditTaskDialog = dynamic(() => import("./EditTaskDialog"), {
+  ssr: false,
+});
+const DeleteTaskDialog = dynamic(() => import("./DeleteTaskDialog"), {
+  ssr: false,
+});
 
 export default function TasksPageClient({
   userId,
@@ -102,9 +108,11 @@ export default function TasksPageClient({
   }, [normalizedSearchQuery, priorityFilter, tasksByStatus]);
 
   const completedCount = tasksByStatus.done.length;
-  const overdueCount = tasks.filter(
-    (task) => getDueDateMeta(task)?.isOverdue,
-  ).length;
+  const overdueCount = useMemo(
+    () =>
+      tasks.filter((task) => getDueDateMeta(task)?.isOverdue).length,
+    [tasks],
+  );
   const completionRate = tasks.length
     ? Math.round((completedCount / tasks.length) * 100)
     : 0;
@@ -159,7 +167,7 @@ export default function TasksPageClient({
     setPriorityFilter("all");
   };
 
-  const handleDragEnd = async ({
+  const handleDragEnd = useCallback(async ({
     source,
     destination,
     draggableId,
@@ -327,7 +335,14 @@ export default function TasksPageClient({
     } finally {
       setIsReordering(false);
     }
-  };
+  }, [
+    isReordering,
+    tasks,
+    tasksByStatus,
+    teamId,
+    userId,
+    visibleTasksByStatus,
+  ]);
 
   const handleAiOptimize = () => {
     toast.info("AI optimization is the next step.", {
@@ -538,33 +553,37 @@ export default function TasksPageClient({
         </DialogContent>
       </Dialog>
 
-      <EditTaskDialog
-        key={editingTask?.id ?? "no-edit-task"}
-        task={editingTask}
-        userId={userId}
-        teamId={teamId}
-        onClose={() => setEditingTask(null)}
-        onSaved={(updatedTask) =>
-          setTasks((currentTasks) =>
-            currentTasks.map((task) =>
-              task.id === updatedTask.id ? updatedTask : task,
-            ),
-          )
-        }
-      />
+      {editingTask ? (
+        <EditTaskDialog
+          key={editingTask.id}
+          task={editingTask}
+          userId={userId}
+          teamId={teamId}
+          onClose={() => setEditingTask(null)}
+          onSaved={(updatedTask) =>
+            setTasks((currentTasks) =>
+              currentTasks.map((task) =>
+                task.id === updatedTask.id ? updatedTask : task,
+              ),
+            )
+          }
+        />
+      ) : null}
 
-      <DeleteTaskDialog
-        key={taskToDelete?.id ?? "no-delete-task"}
-        task={taskToDelete}
-        userId={userId}
-        teamId={teamId}
-        onClose={() => setTaskToDelete(null)}
-        onDeleted={(taskId) =>
-          setTasks((currentTasks) =>
-            currentTasks.filter((task) => task.id !== taskId),
-          )
-        }
-      />
+      {taskToDelete ? (
+        <DeleteTaskDialog
+          key={taskToDelete.id}
+          task={taskToDelete}
+          userId={userId}
+          teamId={teamId}
+          onClose={() => setTaskToDelete(null)}
+          onDeleted={(taskId) =>
+            setTasks((currentTasks) =>
+              currentTasks.filter((task) => task.id !== taskId),
+            )
+          }
+        />
+      ) : null}
     </>
   );
 }

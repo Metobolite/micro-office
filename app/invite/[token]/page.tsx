@@ -1,7 +1,10 @@
 import { acceptInvitation } from "@/app/action/accept-invitation";
-import { ThemeToggle } from "@/app/components/theme";
+import { ThemeToggle } from "@/app/components/theme/theme-toggle";
 import { hashInvitationToken } from "@/app/lib/invitations";
-import { createClient } from "@/app/lib/supabaseServer";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 import type {
   InvitationTeamData,
   InvitePageProps,
@@ -50,18 +53,18 @@ export default async function InvitePage({
   params,
   searchParams,
 }: InvitePageProps) {
-  const { token } = await params;
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const [{ token }, resolvedSearchParams, { user }] = await Promise.all([
+    params,
+    searchParams,
+    getCurrentIdentity(),
+  ]);
   const pageError = getErrorMessage(getFirstParam(resolvedSearchParams?.error));
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect(`/auth/login?next=/invite/${token}`);
   }
 
+  const supabase = await createClient();
   const { data: invitation } = await supabase
     .from("team_invitations")
     .select("email, role, status, expires_at, teams(name)")

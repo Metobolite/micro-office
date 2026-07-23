@@ -1,6 +1,6 @@
-import { ThemeToggle } from "@/app/components/theme";
+import { ThemeToggle } from "@/app/components/theme/theme-toggle";
 import { redirect } from "next/navigation";
-import { createClient } from "../../lib/supabaseServer";
+import { getCurrentClaims } from "../../lib/supabaseServer";
 import LoginButton from "./LoginButton";
 import type { LoginPageProps } from "@/app/types/auth";
 
@@ -17,10 +17,11 @@ function getSafeNextPath(next?: string | string[]) {
 export default async function LoginPage({
   searchParams,
 }: LoginPageProps) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const [resolvedSearchParams, { data }] = await Promise.all([
+    searchParams,
+    getCurrentClaims(),
+  ]);
   const nextPath = getSafeNextPath(resolvedSearchParams?.next);
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
 
   if (data?.claims) {
     redirect(nextPath);

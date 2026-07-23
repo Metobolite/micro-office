@@ -1,6 +1,7 @@
 import { SettingsClient } from "@/app/components/settings/SettingsClient";
-import { createClient } from "@/app/lib/supabaseServer";
+import { getCurrentUser } from "@/app/lib/supabaseServer";
 import {
+  getTeam,
   getTeamContext,
   getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
@@ -20,26 +21,30 @@ function formatAccountDate(value: string) {
 export default async function SettingsPage({
   searchParams,
 }: TeamSearchPageProps) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const [{ user, error }, resolvedSearchParams] = await Promise.all([
+    getCurrentUser(),
+    searchParams,
+  ]);
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeam, activeTeamId, isRequestedTeamIdValid, memberships } =
-    await getTeamContext(supabase, user.id, requestedTeamId);
+  const { activeTeamId, isRequestedTeamIdValid, memberships } =
+    await getTeamContext(user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
   }
 
-  if (!activeTeamId || !activeTeam) {
+  if (!activeTeamId) {
+    redirect("/teams");
+  }
+
+  const activeTeam = await getTeam(activeTeamId);
+
+  if (!activeTeam) {
     redirect("/teams");
   }
 

@@ -15,4 +15,7 @@ export type TeamChatProps = {
   teamId: string;
   members: TeamPresenceProfile[];
   membersLoaded: boolean;
+  initialMessages: Message[];
+  initialMessagesLoaded: boolean;
+  initialMessagesRequestedAt: string;
 };

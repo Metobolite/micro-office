@@ -1,12 +1,11 @@
 import Link from "next/link";
 
-import { ThemeToggle } from "./components/theme";
-import { createClient } from "./lib/supabaseServer";
+import { ThemeToggle } from "./components/theme/theme-toggle";
+import { getCurrentClaims } from "./lib/supabaseServer";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  const loggedIn = Boolean(data.user);
+  const { data } = await getCurrentClaims();
+  const loggedIn = Boolean(data?.claims);
   const destination = loggedIn ? "/teams" : "/auth/login";
 
   return (

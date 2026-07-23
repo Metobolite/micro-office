@@ -1,4 +1,16 @@
-import type { FileItem } from "@/app/types/file";
+import type { FileItem, FileRow } from "@/app/types/file";
+
+type SignedFileUrl = {
+  path?: string | null;
+  signedUrl?: string | null;
+};
+
+const fileDateFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+export const FILE_PAGE_SIZE = 100;
 
 export const SUMMARIZABLE_DOCUMENT_EXTENSIONS = [
   "pdf",
@@ -80,6 +92,31 @@ export function formatFileSize(bytes: number) {
   }
 
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+export function mapFileRows(
+  rows: FileRow[],
+  signedUrls: SignedFileUrl[] = [],
+): FileItem[] {
+  const signedUrlByPath = new Map(
+    signedUrls.flatMap((signedUrl) =>
+      signedUrl.path && signedUrl.signedUrl
+        ? [[signedUrl.path, signedUrl.signedUrl] as const]
+        : [],
+    ),
+  );
+
+  return rows.map((file) => ({
+    id: file.id,
+    name: file.name,
+    type: file.type || "other",
+    size: file.size || "0 B",
+    modified: fileDateFormatter.format(
+      new Date(file.uploaded_at || Date.now()),
+    ),
+    url: signedUrlByPath.get(file.path) ?? "",
+    path: file.path,
+  }));
 }
 
 export function sanitizeStorageFileName(fileName: string) {

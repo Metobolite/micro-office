@@ -6,32 +6,41 @@ import type { TeamScopedProps } from "@/app/types/team";
 export default async function StatsCards({ teamId }: TeamScopedProps) {
   const supabase = await createClient();
 
-  const [{ data: tasks }, { count: teamMemberCount }, { count: fileCount }] =
-    await Promise.all([
-      supabase.from("tasks").select("status").eq("team_id", teamId),
-      supabase
-        .from("team_members")
-        .select("team_id", { count: "exact", head: true })
-        .eq("team_id", teamId),
-      supabase
-        .from("files")
-        .select("id", { count: "exact", head: true })
-        .eq("team_id", teamId),
-    ]);
-
-  const totalTasks = tasks?.length ?? 0;
-  const completedTasks = tasks?.filter((t) => t.status === "done").length ?? 0;
+  const [
+    { count: totalTaskCount },
+    { count: completedTaskCount },
+    { count: teamMemberCount },
+    { count: fileCount },
+  ] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", teamId),
+    supabase
+      .from("tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", teamId)
+      .eq("status", "done"),
+    supabase
+      .from("team_members")
+      .select("team_id", { count: "exact", head: true })
+      .eq("team_id", teamId),
+    supabase
+      .from("files")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", teamId),
+  ]);
 
   const stats = [
     {
       title: "Total Tasks",
-      value: totalTasks,
+      value: totalTaskCount ?? 0,
       icon: Clock,
       color: "text-blue-600",
     },
     {
       title: "Completed",
-      value: completedTasks,
+      value: completedTaskCount ?? 0,
       icon: CheckSquare,
       color: "text-green-600",
     },

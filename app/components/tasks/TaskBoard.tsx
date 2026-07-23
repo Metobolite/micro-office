@@ -24,6 +24,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { memo } from "react";
 import {
   getDueDateMeta,
   TASK_PRIORITY_CONFIG,
@@ -51,7 +52,7 @@ type TaskCardProps = {
   onDelete: (task: Task) => void;
 };
 
-function TaskCard({
+const TaskCard = memo(function TaskCard({
   task,
   index,
   isReordering,
@@ -149,9 +150,9 @@ function TaskCard({
       )}
     </Draggable>
   );
-}
+});
 
-export default function TaskBoard({
+const TaskBoard = memo(function TaskBoard({
   tasksByStatus,
   visibleTasksByStatus,
   hasActiveFilters,
@@ -257,4 +258,6 @@ export default function TaskBoard({
       </section>
     </DragDropContext>
   );
-}
+});
+
+export default TaskBoard;

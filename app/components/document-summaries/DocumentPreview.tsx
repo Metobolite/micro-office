@@ -21,6 +21,38 @@ type DocumentPreviewProps = {
   onDownload: (document: SummaryDocument) => void;
 };
 
+const previewDownloadRequests = new Map<string, Promise<Blob>>();
+
+function downloadPreview(path: string) {
+  const existingRequest = previewDownloadRequests.get(path);
+  if (existingRequest) return existingRequest;
+
+  const request = (async () => {
+    const { data, error } = await supabase.storage
+      .from("user-files")
+      .download(path);
+
+    if (error) throw error;
+    return data;
+  })();
+
+  previewDownloadRequests.set(path, request);
+  void request.then(
+    () => {
+      if (previewDownloadRequests.get(path) === request) {
+        previewDownloadRequests.delete(path);
+      }
+    },
+    () => {
+      if (previewDownloadRequests.get(path) === request) {
+        previewDownloadRequests.delete(path);
+      }
+    },
+  );
+
+  return request;
+}
+
 export function DocumentPreview({
   selectedDocument,
   onDownload,
@@ -47,13 +79,14 @@ export function DocumentPreview({
 
     setStatus("loading");
 
+    const docxPreviewModule =
+      selectedDocument.extension === "docx"
+        ? import("docx-preview")
+        : null;
+
     const loadPreview = async () => {
       try {
-        const { data, error } = await supabase.storage
-          .from("user-files")
-          .download(selectedDocument.path);
-
-        if (error) throw error;
+        const data = await downloadPreview(selectedDocument.path);
         if (data.size > MAX_SUMMARY_DOCUMENT_BYTES) {
           throw new Error("This document is too large to preview in the browser.");
         }
@@ -74,10 +107,10 @@ export function DocumentPreview({
         }
 
         const container = docxContainerRef.current;
-        if (!container || disposed) return;
+        if (!container || disposed || !docxPreviewModule) return;
 
         const [{ renderAsync }, arrayBuffer] = await Promise.all([
-          import("docx-preview"),
+          docxPreviewModule,
           data.arrayBuffer(),
         ]);
 
@@ -118,7 +151,7 @@ export function DocumentPreview({
 
   return (
     <div
-      className="relative min-h-[34rem] overflow-hidden bg-muted/30"
+      className="relative h-[34rem] overflow-hidden bg-muted/30"
       aria-busy={status === "loading"}
     >
       {selectedDocument.extension === "pdf" && pdfUrl ? (
@@ -133,7 +166,7 @@ export function DocumentPreview({
         <div
           ref={docxContainerRef}
           className={cn(
-            "document-docx-preview min-h-[34rem] overflow-auto",
+            "document-docx-preview h-full overflow-auto",
             status !== "ready" && "invisible",
           )}
         />

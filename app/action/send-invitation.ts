@@ -7,7 +7,10 @@ import {
   hashInvitationToken,
   isInvitationRole,
 } from "@/app/lib/invitations";
-import { createClient } from "@/app/lib/supabaseServer";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 
 export async function sendInvitation(
   email: unknown,
@@ -35,9 +38,7 @@ export async function sendInvitation(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getCurrentIdentity();
 
   if (!user) {
     return {
@@ -48,7 +49,7 @@ export async function sendInvitation(
 
   const { data: membership, error: membershipError } = await supabase
     .from("team_members")
-    .select("team_id, role")
+    .select("role")
     .eq("user_id", user.id)
     .eq("team_id", teamId)
     .in("role", ["owner", "admin"])
@@ -76,18 +77,26 @@ export async function sendInvitation(
     };
   }
 
-  const { data: team } = await supabase
-    .from("teams")
-    .select("name")
-    .eq("id", teamId)
-    .single();
-
-  const { data: existingMember } = await supabase
-    .from("team_members")
-    .select("team_id, email")
-    .eq("team_id", teamId)
-    .ilike("email", normalizedEmail)
-    .maybeSingle();
+  const [
+    { data: team },
+    { data: existingMember },
+    { data: existingInvitation },
+  ] = await Promise.all([
+    supabase.from("teams").select("name").eq("id", teamId).single(),
+    supabase
+      .from("team_members")
+      .select("team_id")
+      .eq("team_id", teamId)
+      .ilike("email", normalizedEmail)
+      .maybeSingle(),
+    supabase
+      .from("team_invitations")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("email", normalizedEmail)
+      .eq("status", "pending")
+      .maybeSingle(),
+  ]);
 
   if (existingMember) {
     return {
@@ -95,14 +104,6 @@ export async function sendInvitation(
       message: "This email address is already a member of this team.",
     };
   }
-
-  const { data: existingInvitation } = await supabase
-    .from("team_invitations")
-    .select("id")
-    .eq("team_id", teamId)
-    .eq("email", normalizedEmail)
-    .eq("status", "pending")
-    .maybeSingle();
 
   if (existingInvitation) {
     return {

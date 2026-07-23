@@ -4,11 +4,6 @@ export interface FileItem {
   type: "pdf" | "image" | "document" | "video" | "other";
   size: string;
   modified: string;
-  owner: {
-    name: string;
-    avatar: string;
-  };
-  category: string;
   url: string;
   path: string;
 }
@@ -24,9 +19,11 @@ export type FileRow = {
 
 export type FilesPageProps = {
   userId: string;
-  userName: string;
   teamId: string;
   teamName: string | null;
+  initialFiles: FileItem[];
+  initialHasMore?: boolean;
+  initialLoadFailed?: boolean;
 };
 
 export type DeleteConfirmationDialogProps = {

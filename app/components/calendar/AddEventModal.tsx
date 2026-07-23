@@ -18,8 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { toast } from "sonner";
 
 const MAX_DURATION_HOURS = 10;
@@ -47,7 +46,7 @@ const durationOptions = Array.from(
   },
 );
 
-export default function AddEventModal({
+function AddEventModal({
   userId,
   onEventAdded,
   teamId,
@@ -76,12 +75,7 @@ export default function AddEventModal({
         duration,
         team_id: teamId,
         user_id: userId,
-        attendees: JSON.stringify([
-          {
-            name: "John Doe",
-            avatar: "/placeholder.svg",
-          },
-        ]),
+        attendees: [],
       },
     ]);
 
@@ -108,9 +102,7 @@ export default function AddEventModal({
       </DialogTrigger>
       <DialogContent className="space-y-2">
         <DialogHeader>
-          <VisuallyHidden>
-            <DialogTitle>Add Event</DialogTitle>
-          </VisuallyHidden>
+          <DialogTitle className="sr-only">Add Event</DialogTitle>
         </DialogHeader>
 
         <div>
@@ -195,3 +187,5 @@ export default function AddEventModal({
     </Dialog>
   );
 }
+
+export default memo(AddEventModal);

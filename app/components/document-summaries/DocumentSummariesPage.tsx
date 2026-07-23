@@ -41,14 +41,16 @@ import {
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+const documentDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 function formatDocumentDate(value: string | null) {
   if (!value) return "Date unavailable";
 
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return documentDateFormatter.format(new Date(value));
 }
 
 function DocumentTypeIcon({ document }: { document: SummaryDocument }) {
@@ -470,7 +472,7 @@ export function DocumentSummariesPage({
               </Card>
 
               {selectedDocument ? (
-                <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.45fr)_minmax(19rem,0.75fr)]">
+                <>
                   <Card className="min-w-0 gap-0 overflow-hidden py-0">
                     <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-center gap-3">
@@ -501,7 +503,7 @@ export function DocumentSummariesPage({
                     />
                   </Card>
 
-                  <Card className="gap-0 overflow-hidden py-0">
+                  <Card className="gap-0 overflow-hidden py-0 xl:col-span-2">
                     <div className="border-b p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -542,7 +544,7 @@ export function DocumentSummariesPage({
                       </Button>
                     </CardContent>
                   </Card>
-                </div>
+                </>
               ) : null}
             </div>
           ) : null}

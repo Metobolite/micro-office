@@ -1,6 +1,5 @@
 "use client";
 
-import { ManualTimeEntryDialog } from "@/app/components/time-tracker/ManualTimeEntryDialog";
 import { localDateTimeToISOString } from "@/app/lib/dateTime";
 import { supabase } from "@/app/lib/supabase";
 import {
@@ -16,6 +15,7 @@ import type {
   TeamTimeTrackerProps,
   TimeEntry,
   TimeEntrySummary,
+  TimeTrackerTask,
   TrackerPeriod,
 } from "@/app/types/time-tracker";
 import {
@@ -52,8 +52,24 @@ import {
   TimerReset,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
+
+const ManualTimeEntryDialog = dynamic(
+  () =>
+    import("@/app/components/time-tracker/ManualTimeEntryDialog").then(
+      (module) => module.ManualTimeEntryDialog,
+    ),
+  { ssr: false },
+);
 
 const TIME_ENTRY_COLUMNS =
   "id, team_id, user_id, task_id, task_title, description, start_time, end_time, duration_sec, status, active_started_at, created_at, updated_at";
@@ -154,6 +170,129 @@ const sortEntries = (entries: TimeEntry[]) =>
       new Date(first.start_time).getTime(),
   );
 
+const getTaskBreakdown = (
+  secondsByTask: Map<string, number>,
+  taskLookup: Map<string, TimeTrackerTask>,
+) =>
+  Array.from(secondsByTask.entries())
+    .map(([taskId, seconds]) => ({
+      taskId,
+      title:
+        taskId === "general"
+          ? "General work"
+          : taskId.startsWith("snapshot:")
+            ? taskId.slice("snapshot:".length)
+            : taskLookup.get(taskId)?.title ?? "Deleted task",
+      seconds,
+    }))
+    .sort((first, second) => second.seconds - first.seconds)
+    .slice(0, 5);
+
+const TimeEntryRow = memo(function TimeEntryRow({
+  entry,
+  task,
+  isActive,
+  elapsedSeconds,
+  onDelete,
+}: {
+  entry: TimeEntry;
+  task: TimeTrackerTask | null;
+  isActive: boolean;
+  elapsedSeconds: number;
+  onDelete: (entry: TimeEntry) => void;
+}) {
+  const entryTitle = task?.title ?? entry.task_title ?? "General work";
+  const isOpen = entry.end_time === null;
+  const isPaused = isOpen && entry.status === "paused";
+  const isRunning = isOpen && entry.status === "running";
+  const duration =
+    isActive ? elapsedSeconds : getTimeEntryDuration(entry);
+  const startDate = new Date(entry.start_time);
+  const endDate = entry.end_time ? new Date(entry.end_time) : null;
+  const crossesDateBoundary =
+    endDate !== null && endDate.toDateString() !== startDate.toDateString();
+
+  return (
+    <div className="flex flex-col gap-4 px-5 py-4 transition-colors [contain-intrinsic-size:auto_5rem] [content-visibility:auto] hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="flex min-w-0 items-start gap-3">
+        <div
+          className={`mt-0.5 rounded-lg p-2 ${
+            isPaused
+              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+              : isRunning
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                : "bg-muted text-muted-foreground"
+          }`}
+        >
+          {isPaused ? (
+            <Pause className="size-4 fill-current" />
+          ) : isRunning ? (
+            <Play className="size-4 fill-current" />
+          ) : (
+            <Clock3 className="size-4" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate font-medium">{entryTitle}</p>
+            {isRunning ? (
+              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                Running
+              </Badge>
+            ) : isPaused ? (
+              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                Paused
+              </Badge>
+            ) : null}
+            {task ? (
+              <Badge variant="outline" className="capitalize">
+                {task.status.replace("_", " ")}
+              </Badge>
+            ) : null}
+          </div>
+          {entry.description ? (
+            <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
+              {entry.description}
+            </p>
+          ) : null}
+          <p className="mt-1 text-xs text-muted-foreground">
+            {entryDateFormatter.format(startDate)} ·{" "}
+            {entryTimeFormatter.format(startDate)} –{" "}
+            {endDate
+              ? `${
+                  crossesDateBoundary
+                    ? `${entryDateFormatter.format(endDate)} `
+                    : ""
+                }${entryTimeFormatter.format(endDate)}`
+              : isPaused
+                ? "paused"
+                : "now"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 pl-11 sm:justify-end sm:pl-0">
+        <span className="font-mono text-sm font-semibold tabular-nums">
+          {isOpen
+            ? formatTimerDuration(duration)
+            : formatTrackedDuration(duration)}
+        </span>
+        {!isOpen ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-destructive"
+            aria-label={`Delete ${entryTitle} time entry from ${entryDateFormatter.format(startDate)}`}
+            onClick={() => onDelete(entry)}
+          >
+            <Trash2 />
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+});
+
 export default function TeamTimeTracker({
   userId,
   teamId,
@@ -179,6 +318,7 @@ export default function TeamTimeTracker({
   const [entryToDelete, setEntryToDelete] = useState<TimeEntry | null>(null);
   const latestFetchRequestRef = useRef(0);
   const mutationLockRef = useRef(false);
+  const initialLoadKeyRef = useRef<string | null>(null);
 
   const activeEntryId = activeEntry?.id;
   const isTimerPaused = activeEntry?.status === "paused";
@@ -278,10 +418,16 @@ export default function TeamTimeTracker({
   );
 
   useEffect(() => {
+    const loadKey = `${teamId}:${userId}`;
+    if (initialLoadKeyRef.current === loadKey) return;
+
+    initialLoadKeyRef.current = loadKey;
     void fetchEntries();
-  }, [fetchEntries]);
+  }, [fetchEntries, teamId, userId]);
 
   useEffect(() => {
+    if (summary) return;
+
     const updateCurrentTime = () => setCurrentTime(Date.now());
 
     updateCurrentTime();
@@ -290,11 +436,16 @@ export default function TeamTimeTracker({
     }, 60_000);
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [summary]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      if (!mutationLockRef.current) void fetchEntries();
+      if (
+        document.visibilityState === "visible" &&
+        !mutationLockRef.current
+      ) {
+        void fetchEntries();
+      }
     }, 30_000);
 
     return () => window.clearInterval(intervalId);
@@ -329,7 +480,7 @@ export default function TeamTimeTracker({
       );
       setElapsedSeconds(baselineSeconds + locallyElapsedSeconds);
     };
-    const intervalId = window.setInterval(updateElapsedTime, 250);
+    const intervalId = window.setInterval(updateElapsedTime, 1_000);
 
     return () => window.clearInterval(intervalId);
   }, [activeEntry, summary]);
@@ -349,10 +500,54 @@ export default function TeamTimeTracker({
       document.removeEventListener("visibilitychange", refreshWhenVisible);
   }, [fetchEntries]);
 
+  const insightsClock = summary || activeEntryId ? 0 : currentTime;
   const trackerInsights = useMemo(() => {
+    if (summary) {
+      const activeSummaryDelta =
+        summary.active_entry_id === activeEntryId
+          ? Math.max(
+              0,
+              elapsedSeconds - summary.active_duration_seconds,
+            )
+          : 0;
+      const secondsByTask = new Map<string, number>();
+
+      summary.task_breakdown.forEach((taskSummary) => {
+        const taskKey =
+          taskSummary.task_id ??
+          (taskSummary.task_title
+            ? `snapshot:${taskSummary.task_title}`
+            : "general");
+        secondsByTask.set(
+          taskKey,
+          (secondsByTask.get(taskKey) ?? 0) + taskSummary.seconds,
+        );
+      });
+
+      if (activeSummaryDelta > 0 && activeEntry) {
+        const activeTaskKey =
+          activeEntry.task_id ??
+          (activeEntry.task_title
+            ? `snapshot:${activeEntry.task_title}`
+            : "general");
+        secondsByTask.set(
+          activeTaskKey,
+          (secondsByTask.get(activeTaskKey) ?? 0) + activeSummaryDelta,
+        );
+      }
+
+      return {
+        todaySeconds: summary.today_seconds + activeSummaryDelta,
+        weekSeconds: summary.week_seconds + activeSummaryDelta,
+        totalSeconds: summary.total_seconds + activeSummaryDelta,
+        weekSessions: summary.week_sessions,
+        taskBreakdown: getTaskBreakdown(secondsByTask, taskLookup),
+      };
+    }
+
     const calculationTime = activeEntryId
       ? Date.now()
-      : currentTime || Date.now();
+      : insightsClock || Date.now();
     const todayStart = getStartOfToday().getTime();
     const weekStart = getStartOfWeek().getTime();
     let todaySeconds = 0;
@@ -411,78 +606,24 @@ export default function TeamTimeTracker({
       }
     });
 
-    const activeSummaryDelta =
-      summary && summary.active_entry_id === activeEntryId
-        ? Math.max(
-            0,
-            elapsedSeconds - summary.active_duration_seconds,
-          )
-        : 0;
-
-    if (summary) {
-      secondsByTask.clear();
-      summary.task_breakdown.forEach((taskSummary) => {
-        const taskKey =
-          taskSummary.task_id ??
-          (taskSummary.task_title
-            ? `snapshot:${taskSummary.task_title}`
-            : "general");
-        secondsByTask.set(
-          taskKey,
-          (secondsByTask.get(taskKey) ?? 0) + taskSummary.seconds,
-        );
-      });
-
-      if (activeSummaryDelta > 0 && activeEntry) {
-        const activeTaskKey =
-          activeEntry.task_id ??
-          (activeEntry.task_title
-            ? `snapshot:${activeEntry.task_title}`
-            : "general");
-        secondsByTask.set(
-          activeTaskKey,
-          (secondsByTask.get(activeTaskKey) ?? 0) + activeSummaryDelta,
-        );
-      }
-    }
-
-    const taskBreakdown = Array.from(secondsByTask.entries())
-      .map(([taskId, seconds]) => ({
-        taskId,
-        title:
-          taskId === "general"
-            ? "General work"
-            : taskId.startsWith("snapshot:")
-              ? taskId.slice("snapshot:".length)
-            : taskLookup.get(taskId)?.title ?? "Deleted task",
-        seconds,
-      }))
-      .sort((first, second) => second.seconds - first.seconds)
-      .slice(0, 5);
-
     return {
-      todaySeconds: summary
-        ? summary.today_seconds + activeSummaryDelta
-        : todaySeconds,
-      weekSeconds: summary
-        ? summary.week_seconds + activeSummaryDelta
-        : weekSeconds,
-      totalSeconds: summary
-        ? summary.total_seconds + activeSummaryDelta
-        : totalSeconds,
-      weekSessions: summary?.week_sessions ?? weekSessions,
-      taskBreakdown,
+      todaySeconds,
+      weekSeconds,
+      totalSeconds,
+      weekSessions,
+      taskBreakdown: getTaskBreakdown(secondsByTask, taskLookup),
     };
   }, [
     activeEntry,
     activeEntryId,
-    currentTime,
     elapsedSeconds,
     entries,
+    insightsClock,
     summary,
     taskLookup,
   ]);
 
+  const entryFilterClock = summary ? 0 : currentTime;
   const filteredEntries = useMemo(() => {
     const periodStart =
       period === "today"
@@ -501,14 +642,13 @@ export default function TeamTimeTracker({
       : null;
 
     return entries.filter((entry) => {
-      const entryEndTime = entry.end_time
-        ? new Date(entry.end_time).getTime()
-        : currentTime || Date.now();
       const matchesPeriod =
         periodStart === null ||
         (periodEntryIds
           ? periodEntryIds.has(entry.id)
-          : entryEndTime > periodStart);
+          : (entry.end_time
+                ? new Date(entry.end_time).getTime()
+                : entryFilterClock || Date.now()) > periodStart);
       const matchesTask =
         taskFilter === "all" ||
         (taskFilter === "general"
@@ -517,7 +657,7 @@ export default function TeamTimeTracker({
 
       return matchesPeriod && matchesTask;
     });
-  }, [currentTime, entries, period, summary, taskFilter]);
+  }, [entries, entryFilterClock, period, summary, taskFilter]);
 
   const startTracking = async () => {
     if (activeEntry || !beginAction("start")) return;
@@ -646,8 +786,6 @@ export default function TeamTimeTracker({
           entry.id === stoppedEntry.id ? stoppedEntry : entry,
         ),
       );
-    } else {
-      await fetchEntries();
     }
 
     setActiveEntry(null);
@@ -708,8 +846,6 @@ export default function TeamTimeTracker({
           ...currentEntries.filter((item) => item.id !== savedEntry.id),
         ]),
       );
-    } else {
-      await fetchEntries();
     }
 
     setLoadError(null);
@@ -1133,108 +1269,19 @@ export default function TeamTimeTracker({
             <div className="divide-y">
               {filteredEntries.map((entry) => {
                 const task = entry.task_id
-                  ? taskLookup.get(entry.task_id)
+                  ? taskLookup.get(entry.task_id) ?? null
                   : null;
-                const entryTitle =
-                  task?.title ?? entry.task_title ?? "General work";
-                const isOpen = entry.end_time === null;
-                const isPaused = isOpen && entry.status === "paused";
-                const isRunning = isOpen && entry.status === "running";
-                const duration =
-                  entry.id === activeEntryId
-                    ? elapsedSeconds
-                    : getTimeEntryDuration(entry);
-                const startDate = new Date(entry.start_time);
-                const endDate = entry.end_time
-                  ? new Date(entry.end_time)
-                  : null;
-                const crossesDateBoundary =
-                  endDate !== null &&
-                  endDate.toDateString() !== startDate.toDateString();
+                const isActive = entry.id === activeEntryId;
 
                 return (
-                  <div
+                  <TimeEntryRow
                     key={entry.id}
-                    className="flex flex-col gap-4 px-5 py-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-                  >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div
-                        className={`mt-0.5 rounded-lg p-2 ${
-                          isPaused
-                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                            : isRunning
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {isPaused ? (
-                          <Pause className="size-4 fill-current" />
-                        ) : isRunning ? (
-                          <Play className="size-4 fill-current" />
-                        ) : (
-                          <Clock3 className="size-4" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate font-medium">
-                            {entryTitle}
-                          </p>
-                          {isRunning ? (
-                            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                              Running
-                            </Badge>
-                          ) : isPaused ? (
-                            <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                              Paused
-                            </Badge>
-                          ) : null}
-                          {task ? (
-                            <Badge variant="outline" className="capitalize">
-                              {task.status.replace("_", " ")}
-                            </Badge>
-                          ) : null}
-                        </div>
-                        {entry.description ? (
-                          <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
-                            {entry.description}
-                          </p>
-                        ) : null}
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {entryDateFormatter.format(startDate)} ·{" "}
-                          {entryTimeFormatter.format(startDate)} –{" "}
-                          {endDate
-                            ? `${
-                                crossesDateBoundary
-                                  ? `${entryDateFormatter.format(endDate)} `
-                            : ""
-                              }${entryTimeFormatter.format(endDate)}`
-                            : isPaused
-                              ? "paused"
-                              : "now"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 pl-11 sm:justify-end sm:pl-0">
-                      <span className="font-mono text-sm font-semibold tabular-nums">
-                        {isOpen
-                          ? formatTimerDuration(duration)
-                          : formatTrackedDuration(duration)}
-                      </span>
-                      {!isOpen ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Delete ${entryTitle} time entry from ${entryDateFormatter.format(startDate)}`}
-                          onClick={() => setEntryToDelete(entry)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
+                    entry={entry}
+                    task={task}
+                    isActive={isActive}
+                    elapsedSeconds={isActive ? elapsedSeconds : 0}
+                    onDelete={setEntryToDelete}
+                  />
                 );
               })}
             </div>

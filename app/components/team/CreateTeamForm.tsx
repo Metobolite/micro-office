@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-export default function CreateTeamForm({ userId }: CreateTeamFormProps) {
+export default function CreateTeamForm({
+  userId,
+  userName,
+  userEmail,
+}: CreateTeamFormProps) {
   const router = useRouter();
   const [teamName, setTeamName] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -17,14 +21,10 @@ export default function CreateTeamForm({ userId }: CreateTeamFormProps) {
     e.preventDefault();
 
     startTransition(async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       const { data: team, error: teamError } = await supabase
         .from("teams")
         .insert({ name: teamName, owner_id: userId })
-        .select()
+        .select("id")
         .single();
 
       if (teamError || !team) {
@@ -38,9 +38,8 @@ export default function CreateTeamForm({ userId }: CreateTeamFormProps) {
           team_id: team.id,
           user_id: userId,
           role: "owner",
-          name:
-            user?.user_metadata?.full_name || user?.user_metadata?.name || "",
-          email: user?.email || "",
+          name: userName,
+          email: userEmail,
           joined_at: new Date().toISOString(),
         });
 

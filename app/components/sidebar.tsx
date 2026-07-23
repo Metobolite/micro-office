@@ -12,8 +12,9 @@ import {
   Timer,
   Users,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -26,57 +27,53 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "../../components/ui/sidebar";
-import { ThemeToggle } from "./theme";
+import { ThemeToggle } from "./theme/theme-toggle";
+
+type NavigationItem = {
+  title: string;
+  icon: LucideIcon;
+  url?: string;
+};
+
+const navigation: Array<{
+  title: string;
+  items: NavigationItem[];
+}> = [
+  {
+    title: "Main",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: Home },
+      { title: "Tasks", url: "/dashboard/tasks", icon: CheckSquare },
+      { title: "Chat", url: "/dashboard/chat", icon: MessageSquare },
+    ],
+  },
+  {
+    title: "Tools",
+    items: [
+      { title: "Files", url: "/dashboard/files", icon: FileText },
+      {
+        title: "AI Summaries",
+        url: "/dashboard/summaries",
+        icon: BookOpenText,
+      },
+      { title: "Time Tracking", url: "/dashboard/time-tracker", icon: Timer },
+      { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
+    ],
+  },
+  {
+    title: "Settings",
+    items: [
+      { title: "Team", url: "/dashboard/team", icon: Users },
+      { title: "Settings", url: "/dashboard/settings", icon: Settings },
+      { title: "Logout", icon: LogOut },
+    ],
+  },
+];
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const activeTeamId = searchParams.get("teamId");
-
-  const handleLogout = async () => {
-    const res = await fetch("/auth/logout", {
-      method: "POST",
-    });
-
-    if (res.redirected) {
-      router.push(res.url);
-    } else {
-      router.push("/auth/login");
-    }
-  };
-
-  const navigation = [
-    {
-      title: "Main",
-      items: [
-        { title: "Dashboard", url: "/dashboard", icon: Home },
-        { title: "Tasks", url: "/dashboard/tasks", icon: CheckSquare },
-        { title: "Chat", url: "/dashboard/chat", icon: MessageSquare },
-      ],
-    },
-    {
-      title: "Tools",
-      items: [
-        { title: "Files", url: "/dashboard/files", icon: FileText },
-        {
-          title: "AI Summaries",
-          url: "/dashboard/summaries",
-          icon: BookOpenText,
-        },
-        { title: "Time Tracking", url: "/dashboard/time-tracker", icon: Timer },
-        { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
-      ],
-    },
-    {
-      title: "Settings",
-      items: [
-        { title: "Team", url: "/dashboard/team", icon: Users },
-        { title: "Settings", url: "/dashboard/settings", icon: Settings },
-        { title: "Logout", icon: LogOut, onClick: handleLogout },
-      ],
-    },
-  ];
 
   const withTeamId = (url?: string) => {
     if (!url || !activeTeamId || !url.startsWith("/dashboard")) {
@@ -104,12 +101,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    {item.onClick ? (
-                      <SidebarMenuButton onClick={item.onClick}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    ) : (
+                    {item.url ? (
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.url}
@@ -119,6 +111,13 @@ export function AppSidebar() {
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
+                    ) : (
+                      <form action="/auth/logout" method="post">
+                        <SidebarMenuButton type="submit">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </form>
                     )}
                   </SidebarMenuItem>
                 ))}

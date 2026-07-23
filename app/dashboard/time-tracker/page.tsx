@@ -1,9 +1,13 @@
 import TeamTimeTracker from "@/app/components/time-tracker/TeamTimeTracker";
 import {
+  getTeam,
   getTeamContext,
   getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
-import { createClient } from "@/app/lib/supabaseServer";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 import type { TeamSearchPageProps } from "@/app/types/team";
 import type { TimeTrackerTask } from "@/app/types/time-tracker";
 import { Separator } from "@/components/ui/separator";
@@ -13,21 +17,20 @@ import { redirect } from "next/navigation";
 export default async function TimeTrackerPage({
   searchParams,
 }: TeamSearchPageProps) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const [{ user, error }, resolvedSearchParams] = await Promise.all([
+    getCurrentIdentity(),
+    searchParams,
+  ]);
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, activeTeam, isRequestedTeamIdValid } =
-    await getTeamContext(supabase, user.id, requestedTeamId);
+  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
+    user.id,
+    requestedTeamId,
+  );
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
@@ -37,13 +40,17 @@ export default async function TimeTrackerPage({
     redirect("/teams");
   }
 
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("id, title, status, priority")
-    .eq("user_id", user.id)
-    .eq("team_id", activeTeamId)
-    .order("status", { ascending: true })
-    .order("sort_order", { ascending: true });
+  const supabase = await createClient();
+  const [activeTeam, { data: tasks }] = await Promise.all([
+    getTeam(activeTeamId),
+    supabase
+      .from("tasks")
+      .select("id, title, status, priority")
+      .eq("user_id", user.id)
+      .eq("team_id", activeTeamId)
+      .order("status", { ascending: true })
+      .order("sort_order", { ascending: true }),
+  ]);
 
   return (
     <div className="flex h-full flex-col">

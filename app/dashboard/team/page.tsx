@@ -1,6 +1,10 @@
 import { AddTeamMemberForm } from "@/app/components/team/AddTeamMemberForm";
+import { TeamPresenceProvider } from "@/app/components/presence/TeamPresenceProvider";
 import { TeamPresenceView } from "@/app/components/team/TeamPresenceView";
-import { createClient } from "@/app/lib/supabaseServer";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
@@ -12,22 +16,19 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
 
 export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const [{ user, error }, resolvedSearchParams] = await Promise.all([
+    getCurrentIdentity(),
+    searchParams,
+  ]);
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
 
   const { activeTeamId, isRequestedTeamIdValid, memberships } =
-    await getTeamContext(supabase, user.id, requestedTeamId);
+    await getTeamContext(user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
@@ -45,6 +46,7 @@ export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
       ? activeMembership.role
       : null;
 
+  const supabase = await createClient();
   const { data } = await supabase
     .from("team_members")
     .select(
@@ -86,7 +88,13 @@ export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
         </div>
       </header>
 
-      <TeamPresenceView members={teamMembers} teamId={activeTeamId} />
+      <TeamPresenceProvider
+        userId={user.id}
+        teamIds={[activeTeamId]}
+        defaultTeamId={activeTeamId}
+      >
+        <TeamPresenceView members={teamMembers} teamId={activeTeamId} />
+      </TeamPresenceProvider>
     </div>
   );
 }

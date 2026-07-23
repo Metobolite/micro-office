@@ -9,9 +9,10 @@ export async function TeamMembers({ teamId }: TeamScopedProps) {
 
   const { data: teamMembers, error } = await supabase
     .from("team_members")
-    .select("user_id, role, status, name, email, avatar_url, joined_at")
+    .select("user_id, role, status, name, email, avatar_url")
     .eq("team_id", teamId)
-    .order("joined_at", { ascending: false });
+    .order("joined_at", { ascending: false })
+    .limit(4);
 
   if (error || !teamMembers) {
     return (

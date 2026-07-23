@@ -1,15 +1,17 @@
 "use server";
 
 import { hashInvitationToken } from "@/app/lib/invitations";
-import { createClient } from "@/app/lib/supabaseServer";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 import type { TeamInvitationRow } from "@/app/types/invitation";
 import { redirect } from "next/navigation";
 
 export async function acceptInvitation(token: string) {
+  const tokenHash = hashInvitationToken(token);
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getCurrentIdentity();
 
   if (!user) {
     redirect(`/auth/login?next=/invite/${token}`);
@@ -23,8 +25,8 @@ export async function acceptInvitation(token: string) {
 
   const { data: invitation, error: invitationError } = await supabase
     .from("team_invitations")
-    .select("team_id, email, status, expires_at")
-    .eq("token_hash", hashInvitationToken(token))
+    .select("email, status, expires_at")
+    .eq("token_hash", tokenHash)
     .maybeSingle<TeamInvitationRow>();
 
   if (invitationError || !invitation) {
@@ -45,7 +47,7 @@ export async function acceptInvitation(token: string) {
 
   const { data: acceptedTeamId, error: acceptError } = await supabase.rpc(
     "accept_team_invitation_with_role",
-    { invitation_token_hash: hashInvitationToken(token) },
+    { invitation_token_hash: tokenHash },
   );
 
   if (acceptError || !acceptedTeamId) {

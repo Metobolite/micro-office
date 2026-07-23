@@ -1,13 +1,13 @@
 "use client";
 
 import { Github } from "lucide-react";
-import { supabase } from "../../lib/supabase";
 import type { LoginButtonProps } from "@/app/types/auth";
 
 export default function LoginButton({
   redirectPath = "/teams",
 }: LoginButtonProps) {
   const handleLogin = async (provider: "google" | "github") => {
+    const { supabase } = await import("../../lib/supabase");
     const callbackUrl = new URL("/auth/callback", window.location.origin);
     callbackUrl.searchParams.set("next", redirectPath);
 

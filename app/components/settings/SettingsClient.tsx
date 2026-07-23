@@ -4,7 +4,7 @@ import {
   updateProfileSettings,
   updateWorkspaceSettings,
 } from "@/app/action/update-settings";
-import { useTheme } from "@/app/components/theme";
+import { useTheme } from "@/app/components/theme/theme-provider";
 import type { SettingsClientProps } from "@/app/types/settings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

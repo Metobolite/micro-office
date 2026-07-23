@@ -3,8 +3,10 @@
 import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmationDialog";
 import {
   determineFileType,
+  FILE_PAGE_SIZE,
   formatFileSize,
   getFileExtension,
+  mapFileRows,
   sanitizeStorageFileName,
 } from "@/app/lib/file-utils";
 import { supabase } from "@/app/lib/supabase";
@@ -45,7 +47,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type FileCategoryFilter = "all" | FileItem["type"];
@@ -159,85 +161,111 @@ function FileGridSkeleton() {
 
 export function FilesPage({
   userId,
-  userName,
   teamId,
   teamName,
+  initialFiles,
+  initialHasMore = false,
+  initialLoadFailed = false,
 }: FilesPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
-  const [files, setFiles] = useState<FileItem[]>([]);
+  const [files, setFiles] = useState<FileItem[]>(initialFiles);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState<FileCategoryFilter>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(initialHasMore);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(
+    initialLoadFailed
+      ? "Your files could not be loaded. Please try again."
+      : null,
+  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
+
+  const fetchFilePage = useCallback(
+    async (offset: number) => {
+      const { data, error } = await supabase
+        .from("files")
+        .select("id, name, type, size, uploaded_at, path")
+        .eq("user_id", userId)
+        .eq("team_id", teamId)
+        .order("uploaded_at", { ascending: false })
+        .range(offset, offset + FILE_PAGE_SIZE);
+
+      if (error) {
+        return { error, files: [] as FileItem[], hasMore: false };
+      }
+
+      const allFileRows = (data ?? []) as FileRow[];
+      const fileRows = allFileRows.slice(0, FILE_PAGE_SIZE);
+      const { data: signedUrls, error: signedUrlsError } = fileRows.length
+        ? await supabase.storage
+            .from("user-files")
+            .createSignedUrls(
+              fileRows.map((file) => file.path),
+              3660,
+            )
+        : { data: [], error: null };
+
+      if (signedUrlsError) {
+        console.error("Signed URL error:", signedUrlsError);
+      }
+
+      return {
+        error: null,
+        files: mapFileRows(fileRows, signedUrls ?? []),
+        hasMore: allFileRows.length > FILE_PAGE_SIZE,
+      };
+    },
+    [teamId, userId],
+  );
 
   const fetchFiles = useCallback(
     async (showLoader = true) => {
       if (showLoader) setIsLoading(true);
       setLoadError(null);
 
-      const { data, error } = await supabase
-        .from("files")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("team_id", teamId)
-        .order("uploaded_at", { ascending: false });
+      const result = await fetchFilePage(0);
 
-      if (error) {
-        console.error("File listing error:", error);
+      if (result.error) {
+        console.error("File listing error:", result.error);
         setLoadError("Your files could not be loaded. Please try again.");
-        if (showLoader) setIsLoading(false);
-        return;
+      } else {
+        setFiles(result.files);
+        setHasMore(result.hasMore);
       }
 
-      const fileRows = (data ?? []) as FileRow[];
-      const filesWithUrl = await Promise.all(
-        fileRows.map(async (file) => {
-          const { data: urlData, error: urlError } = await supabase.storage
-            .from("user-files")
-            .createSignedUrl(file.path, 3660);
-
-          if (urlError) {
-            console.error("Signed URL error:", urlError);
-          }
-
-          const fileType = file.type || "other";
-
-          return {
-            id: file.id,
-            name: file.name,
-            type: fileType,
-            size: file.size || "0 B",
-            modified: new Date(file.uploaded_at || Date.now()).toLocaleString("en-US", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }),
-            owner: {
-              name: userName,
-              avatar: "/placeholder.svg",
-            },
-            category: fileType,
-            url: urlData?.signedUrl || "",
-            path: file.path,
-          } satisfies FileItem;
-        }),
-      );
-
-      setFiles(filesWithUrl);
       if (showLoader) setIsLoading(false);
     },
-    [teamId, userId, userName],
+    [fetchFilePage],
   );
 
-  useEffect(() => {
-    void fetchFiles();
-  }, [fetchFiles]);
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    const result = await fetchFilePage(files.length);
+
+    if (result.error) {
+      console.error("Additional files could not be loaded:", result.error);
+      toast.error("More files could not be loaded.");
+    } else {
+      setFiles((currentFiles) => {
+        const filesById = new Map(
+          [...currentFiles, ...result.files].map((file) => [file.id, file]),
+        );
+        return Array.from(filesById.values());
+      });
+      setHasMore(result.hasMore);
+    }
+
+    setIsLoadingMore(false);
+  }, [fetchFilePage, files.length, hasMore, isLoadingMore]);
 
   const filteredFiles = useMemo(() => {
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -650,7 +678,9 @@ export function FilesPage({
                 className="ml-auto whitespace-nowrap text-xs text-muted-foreground lg:ml-1"
                 aria-live="polite"
               >
-                {filteredFiles.length} {filteredFiles.length === 1 ? "file" : "files"}
+                {filteredFiles.length}
+                {hasMore && !hasActiveFilters ? "+" : ""}{" "}
+                {filteredFiles.length === 1 ? "file" : "files"}
               </span>
             </div>
           </section>
@@ -672,7 +702,9 @@ export function FilesPage({
                 </h3>
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                   {hasActiveFilters
-                    ? "Try a different search or clear the active filters."
+                    ? hasMore
+                      ? "No matches in the loaded files. Load more or change the active filters."
+                      : "Try a different search or clear the active filters."
                     : "Upload the first file for this team. You can also drag and drop it here."}
                 </p>
                 <Button
@@ -812,6 +844,22 @@ export function FilesPage({
               </CardContent>
             </Card>
           )}
+
+          {!isLoading && hasMore ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isLoadingMore}
+                onClick={() => void handleLoadMore()}
+              >
+                {isLoadingMore ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : null}
+                {isLoadingMore ? "Loading..." : "Load more files"}
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
 

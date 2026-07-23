@@ -10,9 +10,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
+import { memo } from "react";
 import { toast } from "sonner";
 
-export default function DeleteEventModal({
+function DeleteEventModal({
   userId,
   eventId,
   onDeleted,
@@ -57,3 +58,5 @@ export default function DeleteEventModal({
     </Dialog>
   );
 }
+
+export default memo(DeleteEventModal);

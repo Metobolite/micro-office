@@ -1,6 +1,9 @@
 "use server";
 
-import { createClient } from "@/app/lib/supabaseServer";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 import type {
   ProfileSettingsInput,
   SettingsActionResult,
@@ -81,9 +84,7 @@ export async function updateProfileSettings(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getCurrentIdentity();
 
   if (!user) {
     return { success: false, message: "You must sign in again to continue." };
@@ -164,9 +165,7 @@ export async function updateWorkspaceSettings(
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getCurrentIdentity();
 
   if (!user) {
     return { success: false, message: "You must sign in again to continue." };

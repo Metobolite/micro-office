@@ -21,7 +21,7 @@ import {
 
 const AWAY_AFTER_MS = 5 * 60 * 1000;
 const PRESENCE_PUBLISH_INTERVAL_MS = 7 * 1000;
-const POINTER_ACTIVITY_INTERVAL_MS = 15 * 1000;
+const ACTIVITY_THROTTLE_MS = 15 * 1000;
 
 type PresenceSnapshot = {
   teamId: string | null;
@@ -184,7 +184,7 @@ export function TeamPresenceProvider({
 
   useEffect(() => {
     let awayTimer: ReturnType<typeof setTimeout> | null = null;
-    let lastPointerActivityAt = 0;
+    let lastHandledActivityAt = 0;
 
     const clearAwayTimer = () => {
       if (awayTimer) clearTimeout(awayTimer);
@@ -198,17 +198,19 @@ export function TeamPresenceProvider({
 
     const markActive = () => {
       if (document.visibilityState === "hidden") return;
-      lastActivityAtRef.current = Date.now();
+      const now = Date.now();
+
+      if (
+        desiredStatusRef.current === "online" &&
+        now - lastHandledActivityAt < ACTIVITY_THROTTLE_MS
+      ) {
+        return;
+      }
+
+      lastHandledActivityAt = now;
+      lastActivityAtRef.current = now;
       publishStatus("online");
       scheduleAway();
-    };
-
-    const handlePointerMove = () => {
-      const now = Date.now();
-      if (now - lastPointerActivityAt < POINTER_ACTIVITY_INTERVAL_MS) return;
-
-      lastPointerActivityAt = now;
-      markActive();
     };
 
     const handleVisibilityChange = () => {
@@ -227,6 +229,7 @@ export function TeamPresenceProvider({
     const activityEvents: Array<keyof WindowEventMap> = [
       "focus",
       "keydown",
+      "pointermove",
       "pointerdown",
       "scroll",
       "touchstart",
@@ -235,7 +238,6 @@ export function TeamPresenceProvider({
     activityEvents.forEach((eventName) =>
       window.addEventListener(eventName, markActive, { passive: true }),
     );
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
@@ -243,7 +245,6 @@ export function TeamPresenceProvider({
       activityEvents.forEach((eventName) =>
         window.removeEventListener(eventName, markActive),
       );
-      window.removeEventListener("pointermove", handlePointerMove);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [publishStatus]);

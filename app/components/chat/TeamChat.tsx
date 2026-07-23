@@ -9,9 +9,95 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { formatDistanceToNow } from "date-fns";
 import { Paperclip, Send, Smile } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+const INITIAL_MESSAGE_LIMIT = 200;
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", {
+  numeric: "always",
+});
+const relativeTimeUnits: Array<{
+  divisor: number;
+  unit: Intl.RelativeTimeFormatUnit;
+}> = [
+  { divisor: 60, unit: "second" },
+  { divisor: 60, unit: "minute" },
+  { divisor: 24, unit: "hour" },
+  { divisor: 7, unit: "day" },
+  { divisor: 4.34524, unit: "week" },
+  { divisor: 12, unit: "month" },
+  { divisor: Number.POSITIVE_INFINITY, unit: "year" },
+];
+
+function formatRelativeMessageTime(value: string) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "";
+
+  let duration = (timestamp - Date.now()) / 1000;
+
+  for (const { divisor, unit } of relativeTimeUnits) {
+    if (Math.abs(duration) < divisor) {
+      return relativeTimeFormatter.format(Math.round(duration), unit);
+    }
+    duration /= divisor;
+  }
+
+  return "";
+}
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "NA";
+
+const ChatMessage = memo(function ChatMessage({
+  message,
+  userId,
+}: {
+  message: Message;
+  userId: string;
+}) {
+  const isOwn = message.user_id === userId;
+  const initials = getInitials(message.user_name);
+  const time = formatRelativeMessageTime(message.inserted_at);
+
+  return (
+    <div
+      className={`flex items-start space-x-3 [contain-intrinsic-size:auto_5rem] [content-visibility:auto] ${
+        isOwn ? "flex-row-reverse space-x-reverse" : ""
+      }`}
+    >
+      <Avatar className="h-8 w-8">
+        <AvatarFallback>{initials}</AvatarFallback>
+      </Avatar>
+      <div className={`flex-1 ${isOwn ? "text-right" : ""}`}>
+        <div
+          className={`inline-block max-w-xs rounded-lg p-3 lg:max-w-md ${
+            isOwn
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted"
+          }`}
+        >
+          <p className="text-sm">{message.content}</p>
+        </div>
+        <div className="mb-1 flex items-center justify-end space-x-2">
+          <span className="text-xs text-muted-foreground">{time}</span>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function TeamChat({
   userId,
@@ -19,74 +105,85 @@ export default function TeamChat({
   teamId,
   members,
   membersLoaded,
+  initialMessages,
+  initialMessagesLoaded,
+  initialMessagesRequestedAt,
 }: TeamChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [newMessage, setNewMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const hasLoadedMessagesRef = useRef(false);
+  const hasSyncedInitialMessagesRef = useRef(false);
   const { statusByUserId, connection, errorMessage, isSynced } =
     useTeamPresence(teamId);
-  const onlineMembers = members.filter(
-    (member) => statusByUserId[member.userId] === "online",
-  );
-  const awayMembers = members.filter(
-    (member) => statusByUserId[member.userId] === "away",
-  );
-  const availableMembers = [...onlineMembers, ...awayMembers];
-  const visibleMembers = availableMembers.slice(0, 4);
+  const { onlineMembers, awayMembers, availableMembers, visibleMembers } =
+    useMemo(() => {
+      const online = [];
+      const away = [];
 
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "NA";
+      for (const member of members) {
+        const status = statusByUserId[member.userId];
+        if (status === "online") online.push(member);
+        else if (status === "away") away.push(member);
+      }
+
+      const available = [...online, ...away];
+      return {
+        onlineMembers: online,
+        awayMembers: away,
+        availableMembers: available,
+        visibleMembers: available.slice(0, 4),
+      };
+    }, [members, statusByUserId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({
+      behavior: hasLoadedMessagesRef.current ? "smooth" : "auto",
+    });
+    if (messages.length > 0) hasLoadedMessagesRef.current = true;
   }, [messages]);
 
   useEffect(() => {
     let disposed = false;
 
-    setMessages([]);
-    setNewMessage("");
-
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
+    const syncMessages = async () => {
+      let query = supabase
         .from("messages")
-        .select("*")
-        .eq("team_id", teamId)
-        .order("inserted_at", { ascending: true });
+        .select("id, team_id, content, user_id, user_name, inserted_at")
+        .eq("team_id", teamId);
+
+      if (initialMessagesLoaded) {
+        const newestInitialMessage = initialMessages.at(-1);
+        query = query.gte(
+          "inserted_at",
+          newestInitialMessage?.inserted_at ?? initialMessagesRequestedAt,
+        );
+      }
+
+      const { data, error } = await query
+        .order("inserted_at", { ascending: false })
+        .limit(INITIAL_MESSAGE_LIMIT);
 
       if (disposed) return;
-
-      if (error) console.error("Messages could not be loaded:", error);
-      else {
-        setMessages((currentMessages) => {
-          const fetchedMessages = (data as Message[]).filter(
-            (message) => message.team_id === teamId,
-          );
-          const messagesById = new Map(
-            [
-              ...fetchedMessages,
-              ...currentMessages.filter(
-                (message) => message.team_id === teamId,
-              ),
-            ].map((message) => [message.id, message]),
-          );
-
-          return Array.from(messagesById.values()).sort(
-            (first, second) =>
-              new Date(first.inserted_at).getTime() -
-              new Date(second.inserted_at).getTime(),
-          );
-        });
+      if (error) {
+        console.error("Messages could not be synchronized:", error);
+        return;
       }
-    };
 
-    fetchMessages();
+      setMessages((currentMessages) => {
+        const messagesById = new Map(
+          [...((data ?? []) as Message[]), ...currentMessages]
+            .filter((message) => message.team_id === teamId)
+            .map((message) => [message.id, message]),
+        );
+
+        return Array.from(messagesById.values()).sort(
+          (first, second) =>
+            new Date(first.inserted_at).getTime() -
+            new Date(second.inserted_at).getTime(),
+        );
+      });
+    };
 
     const subscription = supabase
       .channel(`team-chat:${teamId}`)
@@ -111,15 +208,33 @@ export default function TeamChat({
           );
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (disposed) return;
+
+        if (status === "SUBSCRIBED" && !hasSyncedInitialMessagesRef.current) {
+          hasSyncedInitialMessagesRef.current = true;
+          void syncMessages();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          hasSyncedInitialMessagesRef.current = false;
+        }
+      });
 
     return () => {
       disposed = true;
       void supabase.removeChannel(subscription);
     };
-  }, [teamId]);
+  }, [
+    initialMessages,
+    initialMessagesLoaded,
+    initialMessagesRequestedAt,
+    teamId,
+  ]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!newMessage.trim()) return;
 
     const { error } = await supabase.from("messages").insert({
@@ -134,7 +249,7 @@ export default function TeamChat({
     } else {
       setNewMessage("");
     }
-  };
+  }, [newMessage, teamId, userId, userName]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -217,50 +332,13 @@ export default function TeamChat({
 
           <CardContent className="flex flex-col flex-1 overflow-hidden px-6 pb-1">
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 hide-scrollbar">
-              {messages.map((message) => {
-                const isOwn = message.user_id === userId;
-                const initials = message.user_name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase();
-                const time = formatDistanceToNow(
-                  new Date(message.inserted_at),
-                  {
-                    addSuffix: true,
-                  },
-                );
-
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex items-start space-x-3 ${
-                      isOwn ? "flex-row-reverse space-x-reverse" : ""
-                    }`}
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg" />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <div className={`flex-1 ${isOwn ? "text-right" : ""}`}>
-                      <div
-                        className={`inline-block p-3 rounded-lg max-w-xs lg:max-w-md ${
-                          isOwn
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
-                      </div>
-                      <div className="flex items-center space-x-2 mb-1 justify-end">
-                        <span className="text-xs text-muted-foreground">
-                          {time}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  userId={userId}
+                />
+              ))}
               <div ref={bottomRef} />
             </div>
 

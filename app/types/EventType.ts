@@ -9,16 +9,20 @@ export type EventType = {
   attendees?: { name: string; avatar?: string }[];
 };
 
-export type CalendarProps = {
+export type CalendarScopeProps = {
   teamId: string;
   userId: string;
 };
 
-export type AddEventModalProps = CalendarProps & {
+export type CalendarProps = CalendarScopeProps & {
+  initialEvents: EventType[];
+};
+
+export type AddEventModalProps = CalendarScopeProps & {
   onEventAdded: () => void;
 };
 
-export type EditEventModalProps = CalendarProps & {
+export type EditEventModalProps = CalendarScopeProps & {
   event: EventType;
   onEventUpdated: () => void;
 };

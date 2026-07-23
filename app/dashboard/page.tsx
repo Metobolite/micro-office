@@ -5,39 +5,94 @@ import { RecentTasks } from "@/app/components/dashboard/recent-tasks";
 import StatsCards from "@/app/components/dashboard/stats-cards";
 import { TeamMembers } from "@/app/components/dashboard/team-members";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
-import { createClient } from "@/app/lib/supabaseServer";
+import { getCurrentIdentity } from "@/app/lib/supabaseServer";
 import {
+  getTeam,
   getTeamContext,
   getTeamIdFromSearchParams,
 } from "../lib/team-context";
+import type { DashboardUser } from "@/app/types/dashboard";
 import type { TeamSearchPageProps } from "@/app/types/team";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
+
+async function DashboardHeaderData({
+  activeTeamId,
+  user,
+}: {
+  activeTeamId: string;
+  user: DashboardUser;
+}) {
+  const activeTeam = await getTeam(activeTeamId);
+  return <DashboardHeader user={user} teamName={activeTeam?.name} />;
+}
+
+function StatsCardsFallback() {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }, (_, index) => (
+        <Card key={index}>
+          <CardHeader>
+            <Skeleton className="h-4 w-24" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-8 w-14" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function DashboardCardFallback() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-32" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton key={index} className="h-10 w-full" />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default async function DashboardPage({
   searchParams,
 }: TeamSearchPageProps) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const [{ user, error }, resolvedSearchParams] = await Promise.all([
+    getCurrentIdentity(),
+    searchParams,
+  ]);
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, activeTeam, isRequestedTeamIdValid, memberships } =
-    await getTeamContext(supabase, user.id, requestedTeamId);
+  const { activeTeamId, isRequestedTeamIdValid, memberships } =
+    await getTeamContext(user.id, requestedTeamId);
 
   if (requestedTeamId && !isRequestedTeamIdValid) {
     redirect("/teams");
   }
 
   if (!activeTeamId) {
-    return <CreateTeamForm userId={user.id} />;
+    return (
+      <CreateTeamForm
+        userId={user.id}
+        userName={
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          ""
+        }
+        userEmail={user.email || ""}
+      />
+    );
   }
 
   const activeMembership = memberships.find(
@@ -72,18 +127,32 @@ export default async function DashboardPage({
 
   return (
     <div className="flex flex-col h-full">
-      <DashboardHeader
-        user={dashboardUser}
-        teamName={activeTeam?.name}
-      />
+      <Suspense
+        fallback={<DashboardHeader user={dashboardUser} teamName={null} />}
+      >
+        <DashboardHeaderData
+          activeTeamId={activeTeamId}
+          user={dashboardUser}
+        />
+      </Suspense>
       <div className="flex-1 p-6 space-y-6 overflow-auto">
-        <StatsCards teamId={activeTeamId} />
+        <Suspense fallback={<StatsCardsFallback />}>
+          <StatsCards teamId={activeTeamId} />
+        </Suspense>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          <RecentTasks teamId={activeTeamId} />
-          <TeamMembers teamId={activeTeamId} />
-          <RecentMessages teamId={activeTeamId} />
+          <Suspense fallback={<DashboardCardFallback />}>
+            <RecentTasks teamId={activeTeamId} />
+          </Suspense>
+          <Suspense fallback={<DashboardCardFallback />}>
+            <TeamMembers teamId={activeTeamId} />
+          </Suspense>
+          <Suspense fallback={<DashboardCardFallback />}>
+            <RecentMessages teamId={activeTeamId} />
+          </Suspense>
         </div>
-        <RecentFiles teamId={activeTeamId} />
+        <Suspense fallback={<DashboardCardFallback />}>
+          <RecentFiles teamId={activeTeamId} />
+        </Suspense>
       </div>
     </div>
   );

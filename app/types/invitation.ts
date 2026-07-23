@@ -3,7 +3,6 @@ import type { TeamRole } from "@/app/types/team";
 export type InvitationRole = Exclude<TeamRole, "owner">;
 
 export type TeamInvitationRow = {
-  team_id: string;
   email: string;
   status: string;
   expires_at: string;

@@ -1,6 +1,10 @@
-import { ThemeToggle } from "@/app/components/theme";
+import { ThemeToggle } from "@/app/components/theme/theme-toggle";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
-import { createClient } from "@/app/lib/supabaseServer";
+import { getTeamMemberships } from "@/app/lib/team-context";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
 import type { TeamListItem, TeamRecord } from "@/app/types/team";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,37 +32,28 @@ function getStatusVariant(status: string | null) {
 }
 
 export default async function TeamsPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const { data: memberships } = await supabase
-    .from("team_members")
-    .select("team_id, role, status, joined_at")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: false });
-
+  const { memberships } = await getTeamMemberships(user.id);
   const teamIds = Array.from(
-    new Set((memberships || []).map((membership) => membership.team_id)),
+    new Set(memberships.map((membership) => membership.team_id)),
   );
 
+  const supabase = await createClient();
   const { data: teams } = teamIds.length
     ? await supabase
         .from("teams")
-        .select("id, name, owner_id")
+        .select("id, name")
         .in("id", teamIds)
     : { data: [] as TeamRecord[] };
 
   const teamsById = new Map((teams || []).map((team) => [team.id, team]));
 
-  const teamList: TeamListItem[] = (memberships || [])
+  const teamList: TeamListItem[] = memberships
     .map((membership) => {
       const team = teamsById.get(membership.team_id);
 
@@ -126,7 +121,15 @@ export default async function TeamsPage() {
                 </p>
               </div>
 
-              <CreateTeamForm userId={user.id} />
+              <CreateTeamForm
+                userId={user.id}
+                userName={
+                  user.user_metadata?.full_name ||
+                  user.user_metadata?.name ||
+                  ""
+                }
+                userEmail={user.email || ""}
+              />
             </div>
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">

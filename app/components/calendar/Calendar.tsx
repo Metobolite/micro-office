@@ -9,22 +9,42 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import AddEventModal from "./AddEventModal";
 import DeleteEventModal from "./DeleteEventModal";
 import EditEventModal from "./EditEventModal";
 
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 export default function Calendar({
   userId,
   teamId,
+  initialEvents,
 }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState<EventType[]>([]);
+  const [events, setEvents] = useState<EventType[]>(initialEvents);
 
   const fetchEvents = useCallback(async () => {
     const { data, error } = await supabase
       .from("events")
-      .select("*")
+      .select(
+        "id, title, description, type, date, time, duration, attendees",
+      )
       .eq("team_id", teamId)
       .eq("user_id", userId)
       .order("date", { ascending: true });
@@ -32,10 +52,6 @@ export default function Calendar({
     if (error) console.error("Events could not be loaded:", error);
     else setEvents(data as EventType[]);
   }, [teamId, userId]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
 
   const today = useMemo(() => new Date(), []);
   const daysInMonth = new Date(
@@ -51,22 +67,6 @@ export default function Calendar({
     ).getDay();
     return (day + 6) % 7;
   })();
-
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const eventsByDate = useMemo(() => {
     const map: Record<string, EventType[]> = {};
@@ -168,7 +168,7 @@ export default function Calendar({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>
-                  {monthNames[currentDate.getMonth()]}{" "}
+                  {MONTH_NAMES[currentDate.getMonth()]}{" "}
                   {currentDate.getFullYear()}
                 </CardTitle>
                 <div className="flex items-center space-x-2">
@@ -198,7 +198,7 @@ export default function Calendar({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-0 mb-4">
-                {dayNames.map((day) => (
+                {DAY_NAMES.map((day) => (
                   <div
                     key={day}
                     className="p-2 text-center text-sm font-medium text-muted-foreground"
@@ -250,7 +250,13 @@ export default function Calendar({
                           key={i}
                           className="h-6 w-6 border-2 border-background"
                         >
-                          <AvatarImage src={att.avatar} />
+                          <AvatarImage
+                            src={
+                              att.avatar?.startsWith("/placeholder")
+                                ? undefined
+                                : att.avatar
+                            }
+                          />
                           <AvatarFallback className="text-xs">
                             {att.name
                               .split(" ")
