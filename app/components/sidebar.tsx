@@ -15,6 +15,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { DASHBOARD_ROUTES } from "@/app/lib/dashboard-routes";
 import {
   Sidebar,
   SidebarContent,
@@ -42,29 +43,61 @@ const navigation: Array<{
   {
     title: "Main",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: Home },
-      { title: "Tasks", url: "/dashboard/tasks", icon: CheckSquare },
-      { title: "Chat", url: "/dashboard/chat", icon: MessageSquare },
+      {
+        title: DASHBOARD_ROUTES.dashboard.navigationTitle,
+        url: DASHBOARD_ROUTES.dashboard.href,
+        icon: Home,
+      },
+      {
+        title: DASHBOARD_ROUTES.tasks.navigationTitle,
+        url: DASHBOARD_ROUTES.tasks.href,
+        icon: CheckSquare,
+      },
+      {
+        title: DASHBOARD_ROUTES.chat.navigationTitle,
+        url: DASHBOARD_ROUTES.chat.href,
+        icon: MessageSquare,
+      },
     ],
   },
   {
     title: "Tools",
     items: [
-      { title: "Files", url: "/dashboard/files", icon: FileText },
       {
-        title: "AI Summaries",
-        url: "/dashboard/summaries",
+        title: DASHBOARD_ROUTES.files.navigationTitle,
+        url: DASHBOARD_ROUTES.files.href,
+        icon: FileText,
+      },
+      {
+        title: DASHBOARD_ROUTES.summaries.navigationTitle,
+        url: DASHBOARD_ROUTES.summaries.href,
         icon: BookOpenText,
       },
-      { title: "Time Tracking", url: "/dashboard/time-tracker", icon: Timer },
-      { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
+      {
+        title: DASHBOARD_ROUTES.timeTracker.navigationTitle,
+        url: DASHBOARD_ROUTES.timeTracker.href,
+        icon: Timer,
+      },
+      {
+        title: DASHBOARD_ROUTES.calendar.navigationTitle,
+        url: DASHBOARD_ROUTES.calendar.href,
+        icon: Calendar,
+      },
     ],
   },
   {
     title: "Settings",
     items: [
-      { title: "Team", url: "/dashboard/team", icon: Users },
-      { title: "Settings", url: "/dashboard/settings", icon: Settings },
+      {
+        title: DASHBOARD_ROUTES.team.navigationTitle,
+        url: DASHBOARD_ROUTES.team.href,
+        icon: Users,
+      },
+      {
+        title: DASHBOARD_ROUTES.settings.navigationTitle,
+        url: DASHBOARD_ROUTES.settings.href,
+        icon: Settings,
+      },
       { title: "Logout", icon: LogOut },
     ],
   },

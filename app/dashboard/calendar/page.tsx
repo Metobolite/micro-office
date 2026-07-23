@@ -47,13 +47,11 @@ export default async function CalendarPage({
     .order("date", { ascending: true });
 
   return (
-    <div>
-      <Calendar
-        key={activeTeamId}
-        userId={user.id}
-        teamId={activeTeamId}
-        initialEvents={(events as EventType[]) ?? []}
-      />
-    </div>
+    <Calendar
+      key={activeTeamId}
+      userId={user.id}
+      teamId={activeTeamId}
+      initialEvents={(events as EventType[]) ?? []}
+    />
   );
 }

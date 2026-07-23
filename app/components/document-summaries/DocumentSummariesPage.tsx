@@ -22,8 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -77,7 +75,6 @@ function DocumentTypeIcon({ document }: { document: SummaryDocument }) {
 export function DocumentSummariesPage({
   userId,
   teamId,
-  teamName,
   initialDocuments,
   initialLoadFailed,
 }: DocumentSummariesPageProps) {
@@ -285,17 +282,6 @@ export function DocumentSummariesPage({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <div>
-          <h1 className="text-xl font-semibold">AI Summaries</h1>
-          {teamName ? (
-            <p className="text-xs text-muted-foreground">{teamName}</p>
-          ) : null}
-        </div>
-      </header>
-
       <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="space-y-6">
           <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

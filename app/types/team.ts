@@ -15,6 +15,7 @@ export type TeamMembershipRecord = {
   email?: string | null;
   phone?: string | null;
   avatar_url?: string | null;
+  teams?: TeamRecord | TeamRecord[] | null;
 };
 
 export type TeamContext = {

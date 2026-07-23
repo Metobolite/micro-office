@@ -5,7 +5,6 @@ import { createClient } from "@/app/lib/supabaseServer";
 import type {
   TeamContext,
   TeamMembershipRecord,
-  TeamRecord,
   TeamSearchParams,
 } from "@/app/types/team";
 
@@ -24,7 +23,7 @@ const loadTeamMemberships = cache(async (userId: string) => {
   const { data, error } = await supabase
     .from("team_members")
     .select(
-      "team_id, role, status, joined_at, name, email, phone, avatar_url",
+      "team_id, role, status, joined_at, name, email, phone, avatar_url, teams(id, name)",
     )
     .eq("user_id", userId)
     .order("joined_at", { ascending: false })
@@ -36,19 +35,16 @@ const loadTeamMemberships = cache(async (userId: string) => {
   };
 });
 
-export const getTeam = cache(async (teamId: string) => {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("teams")
-    .select("id, name")
-    .eq("id", teamId)
-    .maybeSingle<Pick<TeamRecord, "id" | "name">>();
-
-  return data ?? null;
-});
-
 export function getTeamMemberships(userId: string) {
   return loadTeamMemberships(userId);
+}
+
+export function getMembershipTeam(membership?: TeamMembershipRecord | null) {
+  const relatedTeams = membership?.teams;
+
+  return Array.isArray(relatedTeams)
+    ? relatedTeams[0] ?? null
+    : relatedTeams ?? null;
 }
 
 export async function getTeamContext(

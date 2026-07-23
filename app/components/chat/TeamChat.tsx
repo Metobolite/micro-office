@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardHeaderActions } from "@/app/components/dashboard/dashboard-header-actions";
 import { useTeamPresence } from "@/app/components/presence/TeamPresenceProvider";
 import { supabase } from "@/app/lib/supabase";
 import type { Message, TeamChatProps } from "@/app/types/message";
@@ -7,8 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Paperclip, Send, Smile } from "lucide-react";
 import {
   memo,
@@ -252,77 +251,72 @@ export default function TeamChat({
   }, [newMessage, teamId, userId, userName]);
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Team Chat</h1>
-          <div
-            className="flex items-center gap-3"
-            aria-live="polite"
-            aria-label="Team presence"
-          >
-            {isSynced && visibleMembers.length > 0 ? (
-              <div className="flex -space-x-2">
-                {visibleMembers.map((member) => {
-                  const status = statusByUserId[member.userId];
+    <div className="flex h-full min-h-0 flex-col">
+      <DashboardHeaderActions>
+        <div
+          className="hidden items-center gap-3 sm:flex"
+          aria-live="polite"
+          aria-label="Team presence"
+        >
+          {isSynced && visibleMembers.length > 0 ? (
+            <div className="flex -space-x-2">
+              {visibleMembers.map((member) => {
+                const status = statusByUserId[member.userId];
 
-                  return (
-                    <div
-                      key={member.userId}
-                      className="relative"
-                      title={member.name}
-                    >
-                      <Avatar className="h-8 w-8 border-2 border-background">
-                        <AvatarImage src={member.avatarUrl ?? undefined} />
-                        <AvatarFallback className="text-xs">
-                          {getInitials(member.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span
-                        className={`absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background ${
-                          status === "online"
-                            ? "bg-emerald-500"
-                            : "bg-amber-500"
-                        }`}
-                      />
-                    </div>
-                  );
-                })}
-                {availableMembers.length > visibleMembers.length ? (
-                  <div className="relative z-10 flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-background bg-muted px-1 text-xs font-medium">
-                    +{availableMembers.length - visibleMembers.length}
+                return (
+                  <div
+                    key={member.userId}
+                    className="relative"
+                    title={member.name}
+                  >
+                    <Avatar className="h-8 w-8 border-2 border-background">
+                      <AvatarImage src={member.avatarUrl ?? undefined} />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(member.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span
+                      className={`absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-background ${
+                        status === "online"
+                          ? "bg-emerald-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                  </div>
+                );
+              })}
+              {availableMembers.length > visibleMembers.length ? (
+                <div className="relative z-10 flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-background bg-muted px-1 text-xs font-medium">
+                  +{availableMembers.length - visibleMembers.length}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="text-right text-sm">
+            {connection === "error" ? (
+              <span
+                className="text-destructive"
+                title={errorMessage ?? undefined}
+              >
+                Presence unavailable
+              </span>
+            ) : !membersLoaded ? (
+              <span className="text-destructive">Members unavailable</span>
+            ) : !isSynced ? (
+              <span className="text-muted-foreground">Connecting...</span>
+            ) : (
+              <>
+                <div className="font-medium">{onlineMembers.length} active</div>
+                {awayMembers.length > 0 ? (
+                  <div className="text-xs text-muted-foreground">
+                    {awayMembers.length} away
                   </div>
                 ) : null}
-              </div>
-            ) : null}
-            <div className="text-right text-sm">
-              {connection === "error" ? (
-                <span
-                  className="text-destructive"
-                  title={errorMessage ?? undefined}
-                >
-                  Presence unavailable
-                </span>
-              ) : !membersLoaded ? (
-                <span className="text-destructive">Members unavailable</span>
-              ) : !isSynced ? (
-                <span className="text-muted-foreground">Connecting...</span>
-              ) : (
-                <>
-                  <div className="font-medium">{onlineMembers.length} active</div>
-                  {awayMembers.length > 0 ? (
-                    <div className="text-xs text-muted-foreground">
-                      {awayMembers.length} away
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
-      </header>
+      </DashboardHeaderActions>
 
       <div className="flex-1 flex overflow-hidden">
         <Card className="flex-1 m-6 flex flex-col overflow-hidden">

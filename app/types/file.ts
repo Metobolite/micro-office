@@ -20,7 +20,6 @@ export type FileRow = {
 export type FilesPageProps = {
   userId: string;
   teamId: string;
-  teamName: string | null;
   initialFiles: FileItem[];
   initialHasMore?: boolean;
   initialLoadFailed?: boolean;

@@ -1,13 +1,12 @@
 "use client";
 
+import { DashboardHeaderActions } from "@/app/components/dashboard/dashboard-header-actions";
 import { supabase } from "@/app/lib/supabase";
 import type { CalendarProps, EventType } from "@/app/types/EventType";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import AddEventModal from "./AddEventModal";
@@ -148,21 +147,16 @@ export default function Calendar({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Calendar</h1>
-          <AddEventModal
-            onEventAdded={fetchEvents}
-            teamId={teamId}
-            userId={userId}
-          />
-        </div>
-      </header>
+    <div className="flex h-full min-h-0 flex-col">
+      <DashboardHeaderActions>
+        <AddEventModal
+          onEventAdded={fetchEvents}
+          teamId={teamId}
+          userId={userId}
+        />
+      </DashboardHeaderActions>
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2">
             <CardHeader>

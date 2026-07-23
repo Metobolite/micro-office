@@ -30,6 +30,7 @@ import {
   Save,
   Sun,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -37,6 +38,7 @@ export function SettingsClient({
   profile,
   workspace,
 }: SettingsClientProps) {
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [profileForm, setProfileForm] = useState({
     fullName: profile.fullName,
@@ -96,6 +98,7 @@ export function SettingsClient({
 
         setProfileForm(normalizedProfile);
         setSavedProfile(normalizedProfile);
+        router.refresh();
       } catch (error) {
         console.error("Profile settings request error:", error);
         toast.error("Profile could not be saved. Please try again.");
@@ -121,6 +124,7 @@ export function SettingsClient({
           toast.success(result.message);
           setWorkspaceName(normalizedWorkspaceName);
           setSavedWorkspaceName(normalizedWorkspaceName);
+          router.refresh();
           return;
         }
 

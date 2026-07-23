@@ -1,6 +1,5 @@
 import { FilesPage } from "@/app/components/files/FilesPage";
 import {
-  getTeam,
   getTeamContext,
   getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
@@ -41,17 +40,13 @@ export default async function Page({
   }
 
   const supabase = await createClient();
-  const [activeTeam, { data: fileData, error: filesError }] =
-    await Promise.all([
-      getTeam(activeTeamId),
-      supabase
-        .from("files")
-        .select("id, name, type, size, uploaded_at, path")
-        .eq("user_id", user.id)
-        .eq("team_id", activeTeamId)
-        .order("uploaded_at", { ascending: false })
-        .range(0, FILE_PAGE_SIZE),
-    ]);
+  const { data: fileData, error: filesError } = await supabase
+    .from("files")
+    .select("id, name, type, size, uploaded_at, path")
+    .eq("user_id", user.id)
+    .eq("team_id", activeTeamId)
+    .order("uploaded_at", { ascending: false })
+    .range(0, FILE_PAGE_SIZE);
   const allFileRows = (fileData ?? []) as FileRow[];
   const fileRows = allFileRows.slice(0, FILE_PAGE_SIZE);
   const { data: signedUrls } = fileRows.length
@@ -68,7 +63,6 @@ export default async function Page({
       key={activeTeamId}
       userId={user.id}
       teamId={activeTeamId}
-      teamName={activeTeam?.name ?? null}
       initialFiles={mapFileRows(fileRows, signedUrls ?? [])}
       initialHasMore={allFileRows.length > FILE_PAGE_SIZE}
       initialLoadFailed={Boolean(filesError)}

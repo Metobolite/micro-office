@@ -3,15 +3,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DashboardLoading() {
   return (
     <div
-      className="flex h-full min-h-screen flex-col"
+      className="h-full overflow-hidden"
       aria-label="Loading page"
       aria-busy="true"
     >
-      <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4">
-        <Skeleton className="size-8" />
-        <Skeleton className="h-5 w-32" />
-      </header>
-      <div className="grid flex-1 gap-4 overflow-hidden p-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid h-full gap-4 overflow-hidden p-6 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <Skeleton
             key={index}

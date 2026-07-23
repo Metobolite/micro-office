@@ -77,9 +77,9 @@ export function AddTeamMemberForm({
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button aria-label="Add member" className="px-3 sm:px-4">
           <UserPlus />
-          Add Member
+          <span className="hidden sm:inline">Add Member</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

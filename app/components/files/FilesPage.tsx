@@ -25,8 +25,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
@@ -162,7 +160,6 @@ function FileGridSkeleton() {
 export function FilesPage({
   userId,
   teamId,
-  teamName,
   initialFiles,
   initialHasMore = false,
   initialLoadFailed = false,
@@ -486,17 +483,6 @@ export function FilesPage({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <div>
-          <h1 className="text-xl font-semibold">Files</h1>
-          {teamName ? (
-            <p className="text-xs text-muted-foreground">{teamName}</p>
-          ) : null}
-        </div>
-      </header>
-
       <div
         className="relative min-h-0 flex-1 overflow-y-auto p-4 sm:p-6"
         onDragEnter={handleDragEnter}

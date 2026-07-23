@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Plus } from "lucide-react";
 import { memo, useState } from "react";
 import { toast } from "sonner";
 
@@ -98,7 +99,10 @@ function AddEventModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>+ Add Event</Button>
+        <Button aria-label="Add event" className="px-3 sm:px-4">
+          <Plus />
+          <span className="hidden sm:inline">Add Event</span>
+        </Button>
       </DialogTrigger>
       <DialogContent className="space-y-2">
         <DialogHeader>

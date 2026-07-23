@@ -18,7 +18,6 @@ export type SummaryDocument = {
 export type DocumentSummariesPageProps = {
   userId: string;
   teamId: string;
-  teamName: string | null;
   initialDocuments: SummaryDocument[];
   initialLoadFailed: boolean;
 };

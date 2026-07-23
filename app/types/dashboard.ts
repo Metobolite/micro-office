@@ -3,7 +3,12 @@ export type DashboardUser = {
   avatarUrl: string | null;
 };
 
+export type DashboardTeam = {
+  id: string;
+  name: string | null;
+};
+
 export type DashboardHeaderProps = {
   user: DashboardUser;
-  teamName?: string | null;
+  teams: DashboardTeam[];
 };

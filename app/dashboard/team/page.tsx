@@ -1,3 +1,4 @@
+import { DashboardHeaderActions } from "@/app/components/dashboard/dashboard-header-actions";
 import { AddTeamMemberForm } from "@/app/components/team/AddTeamMemberForm";
 import { TeamPresenceProvider } from "@/app/components/presence/TeamPresenceProvider";
 import { TeamPresenceView } from "@/app/components/team/TeamPresenceView";
@@ -11,8 +12,6 @@ import {
 } from "@/app/lib/team-context";
 import type { TeamSearchPageProps } from "@/app/types/team";
 import type { TeamMemberPresenceCard } from "@/app/types/presence";
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
 
 export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
@@ -72,21 +71,16 @@ export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
   }));
 
   return (
-    <div className="flex flex-col h-full">
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <div className="flex flex-1 items-center justify-between">
-          <h1 className="text-xl font-semibold">Team</h1>
-          {inviterRole ? (
-            <AddTeamMemberForm
-              key={`${activeTeamId}:${inviterRole}`}
-              teamId={activeTeamId}
-              inviterRole={inviterRole}
-            />
-          ) : null}
-        </div>
-      </header>
+    <div className="flex h-full min-h-0 flex-col">
+      {inviterRole ? (
+        <DashboardHeaderActions>
+          <AddTeamMemberForm
+            key={`${activeTeamId}:${inviterRole}`}
+            teamId={activeTeamId}
+            inviterRole={inviterRole}
+          />
+        </DashboardHeaderActions>
+      ) : null}
 
       <TeamPresenceProvider
         userId={user.id}

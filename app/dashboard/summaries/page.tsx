@@ -1,7 +1,6 @@
 import { DocumentSummariesPage } from "@/app/components/document-summaries/DocumentSummariesPage";
 import { mapSummaryDocumentRows } from "@/app/lib/document-summaries";
 import {
-  getTeam,
   getTeamContext,
   getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
@@ -40,15 +39,12 @@ export default async function DocumentSummariesRoute({
   }
 
   const supabase = await createClient();
-  const [activeTeam, { data, error: documentsError }] = await Promise.all([
-    getTeam(activeTeamId),
-    supabase
-      .from("files")
-      .select("id, name, size, uploaded_at, path")
-      .eq("user_id", user.id)
-      .eq("team_id", activeTeamId)
-      .order("uploaded_at", { ascending: false }),
-  ]);
+  const { data, error: documentsError } = await supabase
+    .from("files")
+    .select("id, name, size, uploaded_at, path")
+    .eq("user_id", user.id)
+    .eq("team_id", activeTeamId)
+    .order("uploaded_at", { ascending: false });
 
   const initialDocuments = mapSummaryDocumentRows(
     (data ?? []) as SummaryDocumentRow[],
@@ -59,7 +55,6 @@ export default async function DocumentSummariesRoute({
       key={activeTeamId}
       userId={user.id}
       teamId={activeTeamId}
-      teamName={activeTeam?.name ?? null}
       initialDocuments={initialDocuments}
       initialLoadFailed={Boolean(documentsError)}
     />
