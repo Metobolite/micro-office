@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpenText,
   Calendar,
   CheckSquare,
   FileText,
@@ -58,6 +59,11 @@ export function AppSidebar() {
       title: "Tools",
       items: [
         { title: "Files", url: "/dashboard/files", icon: FileText },
+        {
+          title: "AI Summaries",
+          url: "/dashboard/summaries",
+          icon: BookOpenText,
+        },
         { title: "Time Tracking", url: "/dashboard/time-tracker", icon: Timer },
         { title: "Calendar", url: "/dashboard/calendar", icon: Calendar },
       ],

@@ -1,6 +1,12 @@
 "use client";
 
 import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmationDialog";
+import {
+  determineFileType,
+  formatFileSize,
+  getFileExtension,
+  sanitizeStorageFileName,
+} from "@/app/lib/file-utils";
 import { supabase } from "@/app/lib/supabase";
 import type { FileItem, FileRow, FilesPageProps } from "@/app/types/file";
 import { Badge } from "@/components/ui/badge";
@@ -82,48 +88,6 @@ function getFileIcon(type: FileItem["type"]) {
     default:
       return File;
   }
-}
-
-function determineFileType(extension: string | undefined): FileItem["type"] {
-  if (!extension) return "other";
-
-  const normalizedExtension = extension.toLowerCase();
-
-  if (normalizedExtension === "pdf") return "pdf";
-  if (["jpg", "jpeg", "png", "gif", "svg", "webp"].includes(normalizedExtension)) {
-    return "image";
-  }
-  if (
-    ["doc", "docx", "txt", "xls", "xlsx", "sql", "csv", "ppt", "pptx"].includes(
-      normalizedExtension,
-    )
-  ) {
-    return "document";
-  }
-  if (["mp4", "avi", "mov", "mkv", "webm"].includes(normalizedExtension)) {
-    return "video";
-  }
-
-  return "other";
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
-function sanitizeStorageFileName(fileName: string) {
-  return (
-    fileName
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9_.-]/g, "_") || "file"
-  );
 }
 
 type FileActionsProps = {
@@ -250,9 +214,7 @@ export function FilesPage({
             name: file.name,
             type: fileType,
             size: file.size || "0 B",
-            modified: new Date(
-              file.uploaded_at || file.created_at || Date.now(),
-            ).toLocaleString("en-US", {
+            modified: new Date(file.uploaded_at || Date.now()).toLocaleString("en-US", {
               dateStyle: "medium",
               timeStyle: "short",
             }),
@@ -318,9 +280,7 @@ export function FilesPage({
 
       for (const [index, file] of selectedFiles.entries()) {
         const cleanFileName = sanitizeStorageFileName(file.name);
-        const extension = file.name.includes(".")
-          ? file.name.split(".").pop()
-          : undefined;
+        const extension = getFileExtension(file.name);
         const fileType = determineFileType(extension);
         const filePath = `${userId}/${uploadBatchId}_${index}_${cleanFileName}`;
 

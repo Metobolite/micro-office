@@ -19,7 +19,6 @@ export type FileRow = {
   type: FileItem["type"] | null;
   size: string | null;
   uploaded_at: string | null;
-  created_at: string | null;
   path: string;
 };
 
