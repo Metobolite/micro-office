@@ -17,14 +17,15 @@ import { Suspense } from "react";
 
 function StatsCardsFallback() {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {Array.from({ length: 4 }, (_, index) => (
-        <Card key={index}>
-          <CardHeader>
-            <Skeleton className="h-4 w-24" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-8 w-14" />
+        <Card key={index} className="gap-0 py-0 shadow-sm">
+          <CardContent className="flex items-center gap-3 p-4">
+            <Skeleton className="size-10 shrink-0 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-12" />
+            </div>
           </CardContent>
         </Card>
       ))}
@@ -34,13 +35,15 @@ function StatsCardsFallback() {
 
 function DashboardCardFallback() {
   return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-32" />
+    <Card className="h-full gap-0 overflow-hidden py-0">
+      <CardHeader className="border-b px-5 py-4">
+        <Skeleton className="h-5 w-32" />
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="divide-y p-0">
         {Array.from({ length: 4 }, (_, index) => (
-          <Skeleton key={index} className="h-10 w-full" />
+          <div key={index} className="px-5 py-3">
+            <Skeleton className="h-10 w-full" />
+          </div>
         ))}
       </CardContent>
     </Card>
@@ -84,20 +87,22 @@ export default async function DashboardPage({
   }
 
   return (
-    <div className="h-full space-y-6 overflow-auto p-6">
+    <div className="mx-auto h-full w-full max-w-[1440px] space-y-5 overflow-auto p-4 sm:p-6 lg:p-8">
       <Suspense fallback={<StatsCardsFallback />}>
         <StatsCards teamId={activeTeamId} />
       </Suspense>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <Suspense fallback={<DashboardCardFallback />}>
           <RecentTasks teamId={activeTeamId} />
         </Suspense>
         <Suspense fallback={<DashboardCardFallback />}>
           <TeamMembers teamId={activeTeamId} />
         </Suspense>
-        <Suspense fallback={<DashboardCardFallback />}>
-          <RecentMessages teamId={activeTeamId} />
-        </Suspense>
+        <div className="lg:col-span-2 xl:col-span-1">
+          <Suspense fallback={<DashboardCardFallback />}>
+            <RecentMessages teamId={activeTeamId} />
+          </Suspense>
+        </div>
       </div>
       <Suspense fallback={<DashboardCardFallback />}>
         <RecentFiles teamId={activeTeamId} />

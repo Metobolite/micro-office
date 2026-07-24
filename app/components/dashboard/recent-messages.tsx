@@ -6,9 +6,8 @@ import type { TeamScopedProps } from "@/app/types/team";
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleString("en-US", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+    day: "numeric",
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -26,11 +25,11 @@ export async function RecentMessages({ teamId }: TeamScopedProps) {
 
   if (error || !messages) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Messages</CardTitle>
+      <Card className="h-full gap-0 overflow-hidden py-0">
+        <CardHeader className="border-b px-5 py-4">
+          <CardTitle className="text-base">Recent Messages</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-5 py-4">
           <p className="text-sm text-muted-foreground">
             Messages could not be loaded.
           </p>
@@ -40,36 +39,54 @@ export async function RecentMessages({ teamId }: TeamScopedProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Messages</CardTitle>
+    <Card className="h-full gap-0 overflow-hidden py-0">
+      <CardHeader className="border-b px-5 py-4">
+        <CardTitle className="text-base">Recent Messages</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {messages.map((message) => (
-          <div key={message.id} className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback>
-                {message.user_name
-                  ?.split(/\s+/)
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((part: string) => part[0]?.toUpperCase())
-                  .join("") || "NA"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{message.user_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(message.inserted_at)}
-                </p>
+      <CardContent className="divide-y p-0">
+        {messages.length === 0 ? (
+          <p className="px-5 py-4 text-sm text-muted-foreground">
+            No recent messages.
+          </p>
+        ) : (
+          messages.map((message) => {
+            const senderName = message.user_name || "Team member";
+
+            return (
+              <div
+                key={message.id}
+                className="flex items-center gap-3 px-5 py-3"
+              >
+                <Avatar className="size-9 shrink-0">
+                  <AvatarFallback>
+                    {senderName
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((part: string) => part[0]?.toUpperCase())
+                      .join("") || "NA"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-medium">
+                      {senderName}
+                    </p>
+                    <time
+                      dateTime={message.inserted_at}
+                      className="shrink-0 text-xs text-muted-foreground"
+                    >
+                      {formatDate(message.inserted_at)}
+                    </time>
+                  </div>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {message.content}
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {message.content}
-              </p>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </CardContent>
     </Card>
   );

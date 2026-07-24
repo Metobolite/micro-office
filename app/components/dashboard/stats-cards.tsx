@@ -1,5 +1,5 @@
 import { createClient } from "@/app/lib/supabaseServer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { CheckSquare, Clock, FileText, Users } from "lucide-react";
 import type { TeamScopedProps } from "@/app/types/team";
 
@@ -36,41 +36,56 @@ export default async function StatsCards({ teamId }: TeamScopedProps) {
       title: "Total Tasks",
       value: totalTaskCount ?? 0,
       icon: Clock,
-      color: "text-blue-600",
+      iconClassName:
+        "bg-slate-500/10 text-slate-600 dark:text-slate-300",
     },
     {
       title: "Completed",
       value: completedTaskCount ?? 0,
       icon: CheckSquare,
-      color: "text-green-600",
+      iconClassName:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     },
     {
       title: "Team Members",
       value: teamMemberCount ?? 0,
       icon: Users,
-      color: "text-purple-600",
+      iconClassName:
+        "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     },
     {
       title: "Files",
       value: fileCount ?? 0,
       icon: FileText,
-      color: "text-orange-600",
+      iconClassName:
+        "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section
+      aria-label="Workspace overview"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
+    >
       {stats.map((stat) => (
-        <Card key={stat.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-            <stat.icon className={`h-4 w-4 ${stat.color}`} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stat.value}</div>
+        <Card key={stat.title} className="gap-0 py-0 shadow-sm">
+          <CardContent className="flex items-center gap-3 p-4">
+            <span
+              className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${stat.iconClassName}`}
+            >
+              <stat.icon className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-medium text-muted-foreground">
+                {stat.title}
+              </p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight">
+                {stat.value}
+              </p>
+            </div>
           </CardContent>
         </Card>
       ))}
-    </div>
+    </section>
   );
 }

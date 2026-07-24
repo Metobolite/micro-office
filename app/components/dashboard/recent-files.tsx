@@ -17,11 +17,9 @@ const getFileIcon = (type: string) => {
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleString("en-US", {
-    day: "2-digit",
-    month: "long",
+    day: "numeric",
+    month: "short",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -37,11 +35,11 @@ export async function RecentFiles({ teamId }: TeamScopedProps) {
 
   if (error || !files) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Files</CardTitle>
+      <Card className="gap-0 overflow-hidden py-0">
+        <CardHeader className="border-b px-5 py-4">
+          <CardTitle className="text-base">Recent Files</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-5 py-4">
           <p className="text-sm text-muted-foreground">
             Files could not be loaded.
           </p>
@@ -50,33 +48,46 @@ export async function RecentFiles({ teamId }: TeamScopedProps) {
     );
   }
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Files</CardTitle>
+    <Card className="gap-0 overflow-hidden py-0">
+      <CardHeader className="border-b px-5 py-4">
+        <CardTitle className="text-base">Recent Files</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {files.map((file) => {
-            const Icon = getFileIcon(file.type);
-            return (
-              <div
-                key={file.id}
-                className="flex items-center space-x-3 p-3 rounded-lg border"
-              >
-                <Icon className="h-8 w-8 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">{file.size}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {file.uploaded_at
-                      ? formatDate(file.uploaded_at)
-                      : "Unknown date"}
-                  </p>
+      <CardContent className={files.length === 0 ? "px-5 py-4" : "p-4"}>
+        {files.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No recent files.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {files.map((file) => {
+              const Icon = getFileIcon(file.type);
+
+              return (
+                <div
+                  key={file.id}
+                  className="flex items-center gap-3 rounded-lg bg-muted/40 p-3"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-card text-muted-foreground">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {file.size}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {file.uploaded_at ? (
+                        <time dateTime={file.uploaded_at}>
+                          {formatDate(file.uploaded_at)}
+                        </time>
+                      ) : (
+                        "Unknown date"
+                      )}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
