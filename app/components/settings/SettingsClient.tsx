@@ -34,10 +34,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-export function SettingsClient({
-  profile,
-  workspace,
-}: SettingsClientProps) {
+export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [profileForm, setProfileForm] = useState({
@@ -109,9 +106,7 @@ export function SettingsClient({
   const handleWorkspaceSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const normalizedWorkspaceName = workspaceName
-      .trim()
-      .replace(/\s+/g, " ");
+    const normalizedWorkspaceName = workspaceName.trim().replace(/\s+/g, " ");
 
     startWorkspaceTransition(async () => {
       try {
@@ -370,16 +365,6 @@ export function SettingsClient({
                       Only owners and admins can edit this value.
                     </p>
                   ) : null}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="workspace-id">Workspace ID</Label>
-                  <Input
-                    id="workspace-id"
-                    readOnly
-                    value={workspace.id}
-                    className="font-mono text-xs text-muted-foreground"
-                  />
                 </div>
 
                 <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-3 py-2.5 text-sm">
