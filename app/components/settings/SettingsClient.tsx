@@ -4,6 +4,7 @@ import {
   updateProfileSettings,
   updateWorkspaceSettings,
 } from "@/app/action/update-settings";
+import { supabase } from "@/app/lib/supabase";
 import { useTheme } from "@/app/components/theme/theme-provider";
 import type { SettingsClientProps } from "@/app/types/settings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,7 +32,15 @@ import {
   Sun,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState, useTransition } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 
 export function SettingsClient({ profile, workspace }: SettingsClientProps) {
@@ -51,6 +60,13 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   const [savedWorkspaceName, setSavedWorkspaceName] = useState(workspace.name);
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isWorkspacePending, startWorkspaceTransition] = useTransition();
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
+    null,
+  );
+  const [selectedAvatarPreviewUrl, setSelectedAvatarPreviewUrl] = useState<
+    string | null
+  >(null);
 
   const initials = useMemo(() => {
     const value = profileForm.fullName || profile.email;
@@ -66,7 +82,8 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   const profileIsDirty =
     profileForm.fullName !== savedProfile.fullName ||
     profileForm.phone !== savedProfile.phone ||
-    profileForm.avatarUrl !== savedProfile.avatarUrl;
+    profileForm.avatarUrl !== savedProfile.avatarUrl ||
+    selectedAvatarFile !== null;
   const workspaceIsDirty = workspaceName !== savedWorkspaceName;
 
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -79,10 +96,60 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
     };
 
     startProfileTransition(async () => {
+      let uploadedAvatarPath: string | null = null;
+
       try {
-        const result = await updateProfileSettings(normalizedProfile);
+        let nextAvatarUrl = normalizedProfile.avatarUrl;
+
+        if (selectedAvatarFile) {
+          const { data: authData, error: authError } =
+            await supabase.auth.getUser();
+
+          if (authError || !authData.user) {
+            toast.error("You must sign in again to upload a profile photo.");
+            return;
+          }
+
+          const safeFileName = selectedAvatarFile.name
+            .replace(/[^a-zA-Z0-9._-]/g, "-")
+            .toLowerCase();
+          const filePath = `${authData.user.id}/avatars/${Date.now()}-${safeFileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(filePath, selectedAvatarFile, {
+              upsert: true,
+              contentType: selectedAvatarFile.type,
+            });
+
+          if (uploadError) {
+            toast.error(`Profile photo could not be uploaded: ${uploadError.message}`);
+            return;
+          }
+
+          uploadedAvatarPath = filePath;
+          const { data: publicUrlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(filePath);
+
+          if (!publicUrlData.publicUrl) {
+            toast.error("Profile photo URL could not be generated.");
+            await supabase.storage.from("avatars").remove([filePath]);
+            return;
+          }
+
+          nextAvatarUrl = publicUrlData.publicUrl;
+        }
+
+        const result = await updateProfileSettings({
+          ...normalizedProfile,
+          avatarUrl: nextAvatarUrl,
+        });
 
         if (!result.success) {
+          if (uploadedAvatarPath) {
+            await supabase.storage.from("avatars").remove([uploadedAvatarPath]);
+          }
           toast.error(result.message);
           return;
         }
@@ -93,10 +160,23 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
           toast.success(result.message);
         }
 
-        setProfileForm(normalizedProfile);
-        setSavedProfile(normalizedProfile);
+        const nextProfile = {
+          ...normalizedProfile,
+          avatarUrl: nextAvatarUrl,
+        };
+        setProfileForm(nextProfile);
+        setSavedProfile(nextProfile);
+        setSelectedAvatarFile(null);
+        setSelectedAvatarPreviewUrl((currentUrl) => {
+          if (currentUrl) URL.revokeObjectURL(currentUrl);
+          return null;
+        });
+        if (avatarFileInputRef.current) avatarFileInputRef.current.value = "";
         router.refresh();
       } catch (error) {
+        if (uploadedAvatarPath) {
+          await supabase.storage.from("avatars").remove([uploadedAvatarPath]);
+        }
         console.error("Profile settings request error:", error);
         toast.error("Profile could not be saved. Please try again.");
       }
@@ -131,6 +211,31 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
     });
   };
 
+  const handleAvatarFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!selectedFile.type.startsWith("image/")) {
+      toast.error("Please select a valid image file.");
+      event.target.value = "";
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedFile);
+    setSelectedAvatarFile(selectedFile);
+    setSelectedAvatarPreviewUrl((currentUrl) => {
+      if (currentUrl) URL.revokeObjectURL(currentUrl);
+      return previewUrl;
+    });
+  };
+
+  useEffect(
+    () => () => {
+      if (selectedAvatarPreviewUrl) URL.revokeObjectURL(selectedAvatarPreviewUrl);
+    },
+    [selectedAvatarPreviewUrl],
+  );
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
       <Card className="overflow-hidden py-0">
@@ -139,7 +244,9 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <Avatar className="-mt-12 size-24 border-4 border-card bg-card shadow-sm">
               <AvatarImage
-                src={profileForm.avatarUrl || undefined}
+                src={
+                  selectedAvatarPreviewUrl || profileForm.avatarUrl || undefined
+                }
                 alt={profileForm.fullName}
               />
               <AvatarFallback className="text-xl font-semibold">
@@ -234,24 +341,25 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="avatar-url">Profile image URL</Label>
+                <Label htmlFor="avatar-photo">Profile photo</Label>
+                <Button
+                  id="avatar-photo"
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                >
+                  Choose photo
+                </Button>
                 <Input
-                  id="avatar-url"
-                  type="url"
-                  inputMode="url"
-                  maxLength={500}
-                  placeholder="https://example.com/avatar.jpg"
-                  value={profileForm.avatarUrl}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      avatarUrl: event.target.value,
-                    }))
-                  }
+                  ref={avatarFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarFileSelect}
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Use a public image address, or leave empty to use the image
-                  from your sign-in provider.
+                  Choose an image file. It will be uploaded when you save profile.
                 </p>
               </div>
             </CardContent>
@@ -261,13 +369,19 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
                 variant="outline"
                 className="w-full sm:w-auto"
                 disabled={!profileIsDirty || isProfilePending}
-                onClick={() =>
+                onClick={() => {
                   setProfileForm({
                     fullName: savedProfile.fullName,
                     phone: savedProfile.phone,
                     avatarUrl: savedProfile.avatarUrl,
-                  })
-                }
+                  });
+                  setSelectedAvatarFile(null);
+                  setSelectedAvatarPreviewUrl((currentUrl) => {
+                    if (currentUrl) URL.revokeObjectURL(currentUrl);
+                    return null;
+                  });
+                  if (avatarFileInputRef.current) avatarFileInputRef.current.value = "";
+                }}
               >
                 Reset
               </Button>
