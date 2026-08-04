@@ -1,6 +1,7 @@
 "use client";
 
-import { Github } from "lucide-react";
+import { Github, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { LoginButtonProps } from "@/app/types/auth";
 
 export default function LoginButton({
@@ -26,24 +27,35 @@ export default function LoginButton({
 
   return (
     <div className="flex w-full flex-col gap-3">
-      <button
+      <div className="mb-1 flex items-center gap-3 text-[0.7rem] uppercase tracking-[0.35em] text-muted-foreground">
+        <span className="h-px flex-1 bg-border" />
+        <span>secure access</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+      <Button
         type="button"
         onClick={() => handleLogin("google")}
-        className="inline-flex items-center justify-center gap-3 rounded-lg border bg-background px-6 py-2 text-foreground shadow-sm transition hover:bg-accent hover:text-accent-foreground"
+        variant="outline"
+        className="h-12 w-full justify-start rounded-xl border-border/70 bg-background/80 px-4 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent/80 hover:shadow-md"
       >
-        <span className="flex h-5 w-5 items-center justify-center rounded-full border text-xs font-semibold">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary">
           G
         </span>
-        Sign in with Google
-      </button>
-      <button
+        <span className="ml-2">Continue with Google</span>
+      </Button>
+      <Button
         type="button"
         onClick={() => handleLogin("github")}
-        className="inline-flex items-center justify-center gap-3 rounded-lg border bg-background px-6 py-2 text-foreground shadow-sm transition hover:bg-accent hover:text-accent-foreground"
+        variant="outline"
+        className="h-12 w-full justify-start rounded-xl border-border/70 bg-background/80 px-4 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent/80 hover:shadow-md"
       >
         <Github className="h-5 w-5" />
-        Sign in with GitHub
-      </button>
+        <span className="ml-1">Continue with GitHub</span>
+      </Button>
+      <div className="mt-2 flex items-center justify-center gap-2 rounded-full border border-border/70 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+        <Sparkles className="h-3.5 w-3.5" />
+        <span>Fast and secure sign-in</span>
+      </div>
     </div>
   );
 }
