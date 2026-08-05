@@ -53,22 +53,50 @@ export default function CreateTeamForm({
   };
 
   return (
-    <Card className="max-w-md mx-auto mt-20 shadow-lg p-6">
+    <Card className="max-w-md mx-auto mt-12 shadow-sm p-6 rounded-lg">
       <CardContent className="flex flex-col gap-4">
-        <h2 className="text-xl font-semibold text-center">
-          Create New Project
-        </h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/teams")}
+            className="text-sm text-white hover:text-gray-300 transition-colors p-2 rounded-md bg-accent/80 hover:bg-accent/90"
+            aria-label="Back to teams"
+          >
+            Back to Teams
+          </button>
+          <h2 className="text-lg font-medium text-center flex-1">
+            Create Project
+          </h2>
+          <div className="w-12" />
+        </div>
+
+        <p className="text-sm text-gray-500">
+          Add a short name for your project. You can invite members later.
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <Input
             type="text"
             placeholder="Project name"
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             required
+            aria-label="Project name"
+            className="py-2"
           />
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Creating..." : "Create Project"}
-          </Button>
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={isPending} className="flex-1">
+              {isPending ? "Creating..." : "Create"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => router.push("/teams")}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

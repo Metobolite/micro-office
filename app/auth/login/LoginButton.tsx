@@ -36,21 +36,27 @@ export default function LoginButton({
         type="button"
         onClick={() => handleLogin("google")}
         variant="outline"
-        className="h-12 w-full justify-start rounded-xl border-border/70 bg-background/80 px-4 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent/80 hover:shadow-md"
+        className="h-12 w-full justify-start rounded-xl border-border/70 bg-background/80 px-4! text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent/80 hover:shadow-md"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary">
-          G
-        </span>
-        <span className="ml-2">Continue with Google</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#FFFFFF"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M12 2a9.96 9.96 0 0 1 6.29 2.226a1 1 0 0 1 .04 1.52l-1.51 1.362a1 1 0 0 1 -1.265 .06a6 6 0 1 0 2.103 6.836l.001 -.004h-3.66a1 1 0 0 1 -.992 -.883l-.007 -.117v-2a1 1 0 0 1 1 -1h6.945a1 1 0 0 1 .994 .89c.04 .367 .061 .737 .061 1.11c0 5.523 -4.477 10 -10 10s-10 -4.477 -10 -10s4.477 -10 10 -10z"></path>
+        </svg>
+        <span className="ml-2!">Continue with Google</span>
       </Button>
       <Button
         type="button"
         onClick={() => handleLogin("github")}
         variant="outline"
-        className="h-12 w-full justify-start rounded-xl border-border/70 bg-background/80 px-4 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent/80 hover:shadow-md"
+        className="h-12 w-full justify-start rounded-xl border-border/70 bg-background/80 px-4! text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent/80 hover:shadow-md"
       >
         <Github className="h-5 w-5" />
-        <span className="ml-1">Continue with GitHub</span>
+        <span className="ml-2!">Continue with GitHub</span>
       </Button>
       <div className="mt-2 flex items-center justify-center gap-2 rounded-full border border-border/70 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
         <Sparkles className="h-3.5 w-3.5" />
