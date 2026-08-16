@@ -1,4 +1,5 @@
 export type LoginSearchParams = {
+  error?: string | string[];
   next?: string | string[];
 };
 

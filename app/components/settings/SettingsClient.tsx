@@ -43,6 +43,13 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -113,12 +120,12 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
           const safeFileName = selectedAvatarFile.name
             .replace(/[^a-zA-Z0-9._-]/g, "-")
             .toLowerCase();
-          const filePath = `${authData.user.id}/avatars/${Date.now()}-${safeFileName}`;
+          const filePath = `${authData.user.id}/avatars/${crypto.randomUUID()}-${safeFileName}`;
 
           const { error: uploadError } = await supabase.storage
             .from("avatars")
             .upload(filePath, selectedAvatarFile, {
-              upsert: true,
+              upsert: false,
               contentType: selectedAvatarFile.type,
             });
 
@@ -215,8 +222,14 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
-    if (!selectedFile.type.startsWith("image/")) {
-      toast.error("Please select a valid image file.");
+    if (!ALLOWED_AVATAR_MIME_TYPES.has(selectedFile.type.toLowerCase())) {
+      toast.error("Choose a JPEG, PNG, or WebP image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (selectedFile.size > MAX_AVATAR_BYTES) {
+      toast.error("Profile photos must be 5 MB or smaller.");
       event.target.value = "";
       return;
     }
@@ -354,12 +367,13 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
                 <Input
                   ref={avatarFileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   className="hidden"
                   onChange={handleAvatarFileSelect}
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Choose an image file. It will be uploaded when you save profile.
+                  Choose a JPEG, PNG, or WebP image up to 5 MB. It will be
+                  uploaded when you save profile.
                 </p>
               </div>
             </CardContent>

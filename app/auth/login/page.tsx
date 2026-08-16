@@ -1,18 +1,9 @@
 import { ThemeToggle } from "@/app/components/theme/theme-toggle";
+import { getSafeInternalRedirect } from "@/app/lib/internal-redirect";
 import { redirect } from "next/navigation";
 import { getCurrentClaims } from "../../lib/supabaseServer";
 import LoginButton from "./LoginButton";
 import type { LoginPageProps } from "@/app/types/auth";
-
-function getSafeNextPath(next?: string | string[]) {
-  const nextPath = Array.isArray(next) ? next[0] : next;
-
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/teams";
-  }
-
-  return nextPath;
-}
 
 export default async function LoginPage({
   searchParams,
@@ -21,7 +12,10 @@ export default async function LoginPage({
     searchParams,
     getCurrentClaims(),
   ]);
-  const nextPath = getSafeNextPath(resolvedSearchParams?.next);
+  const nextPath = getSafeInternalRedirect(resolvedSearchParams?.next);
+  const errorValue = Array.isArray(resolvedSearchParams?.error)
+    ? resolvedSearchParams.error[0]
+    : resolvedSearchParams?.error;
 
   if (data?.claims) {
     redirect(nextPath);
@@ -57,6 +51,15 @@ export default async function LoginPage({
                   Choose one of the options below to continue.
                 </p>
               </div>
+
+              {errorValue === "callback" ? (
+                <p
+                  role="alert"
+                  className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                >
+                  Sign-in could not be completed. Please try again.
+                </p>
+              ) : null}
 
               <LoginButton redirectPath={nextPath} />
 

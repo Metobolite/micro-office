@@ -73,6 +73,7 @@ const ManualTimeEntryDialog = dynamic(
 
 const TIME_ENTRY_COLUMNS =
   "id, team_id, user_id, task_id, task_title, description, start_time, end_time, duration_sec, status, active_started_at, created_at, updated_at";
+const TIME_ENTRY_PAGE_SIZE = 100;
 
 const entryDateFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
@@ -164,11 +165,22 @@ const getRpcSummary = (data: unknown): TimeEntrySummary | null => {
 };
 
 const sortEntries = (entries: TimeEntry[]) =>
-  [...entries].sort(
-    (first, second) =>
-      new Date(second.start_time).getTime() -
-      new Date(first.start_time).getTime(),
-  );
+  [...entries].sort((first, second) => {
+    const firstStartTime = new Date(first.start_time).getTime();
+    const secondStartTime = new Date(second.start_time).getTime();
+
+    if (
+      Number.isFinite(firstStartTime) &&
+      Number.isFinite(secondStartTime) &&
+      firstStartTime !== secondStartTime
+    ) {
+      return secondStartTime - firstStartTime;
+    }
+
+    const startTimeOrder = second.start_time.localeCompare(first.start_time);
+
+    return startTimeOrder || second.id.localeCompare(first.id);
+  });
 
 const getTaskBreakdown = (
   secondsByTask: Map<string, number>,
@@ -310,6 +322,8 @@ export default function TeamTimeTracker({
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasLoadedEntries, setHasLoadedEntries] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreEntries, setHasMoreEntries] = useState(false);
   const [activeAction, setActiveAction] = useState<TrackerAction | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -319,6 +333,10 @@ export default function TeamTimeTracker({
   const latestFetchRequestRef = useRef(0);
   const mutationLockRef = useRef(false);
   const initialLoadKeyRef = useRef<string | null>(null);
+  const entryWindowSizeRef = useRef(TIME_ENTRY_PAGE_SIZE);
+  const loadedEntryWindowSizeRef = useRef(TIME_ENTRY_PAGE_SIZE);
+  const hasMoreEntriesRef = useRef(false);
+  const isLoadingMoreRef = useRef(false);
 
   const activeEntryId = activeEntry?.id;
   const isTimerPaused = activeEntry?.status === "paused";
@@ -357,7 +375,10 @@ export default function TeamTimeTracker({
   );
 
   const fetchEntries = useCallback(
-    async (showRefreshState = false) => {
+    async (
+      showRefreshState = false,
+      requestedWindowSize = entryWindowSizeRef.current,
+    ) => {
       const requestId = latestFetchRequestRef.current + 1;
       latestFetchRequestRef.current = requestId;
 
@@ -372,7 +393,8 @@ export default function TeamTimeTracker({
           .eq("team_id", teamId)
           .eq("user_id", userId)
           .order("start_time", { ascending: false })
-          .limit(1000),
+          .order("id", { ascending: false })
+          .limit(requestedWindowSize + 1),
         supabase.rpc("get_time_entry_summary", {
           p_team_id: teamId,
           p_timezone: timezone,
@@ -386,7 +408,9 @@ export default function TeamTimeTracker({
       if (error) {
         setDatabaseError(error, "Time entries could not be loaded.");
       } else {
-        const latestEntries = (entriesResult.data ?? []) as TimeEntry[];
+        const entryRows = (entriesResult.data ?? []) as TimeEntry[];
+        const hasMore = entryRows.length > requestedWindowSize;
+        const latestEntries = entryRows.slice(0, requestedWindowSize);
         const nextSummary = getRpcSummary(summaryResult.data);
         const runningEntry = nextSummary
           ? nextSummary.active_entry
@@ -402,8 +426,15 @@ export default function TeamTimeTracker({
         setSummary(nextSummary);
         setActiveEntry(runningEntry);
         setHasLoadedEntries(true);
+        setHasMoreEntries(hasMore);
         setLoadError(null);
         setSchemaNeedsSetup(false);
+        entryWindowSizeRef.current = Math.max(
+          entryWindowSizeRef.current,
+          requestedWindowSize,
+        );
+        loadedEntryWindowSizeRef.current = requestedWindowSize;
+        hasMoreEntriesRef.current = hasMore;
 
         if (runningEntry) {
           setSelectedTaskId(runningEntry.task_id ?? "");
@@ -658,6 +689,32 @@ export default function TeamTimeTracker({
       return matchesPeriod && matchesTask;
     });
   }, [entries, entryFilterClock, period, summary, taskFilter]);
+
+  const loadMoreEntries = async () => {
+    if (
+      isLoadingMoreRef.current ||
+      !hasMoreEntriesRef.current ||
+      mutationLockRef.current
+    ) {
+      return;
+    }
+
+    const nextWindowSize =
+      loadedEntryWindowSizeRef.current + TIME_ENTRY_PAGE_SIZE;
+    entryWindowSizeRef.current = Math.max(
+      entryWindowSizeRef.current,
+      nextWindowSize,
+    );
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+
+    try {
+      await fetchEntries(false, nextWindowSize);
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMore(false);
+    }
+  };
 
   const startTracking = async () => {
     if (activeEntry || !beginAction("start")) return;
@@ -1286,6 +1343,29 @@ export default function TeamTimeTracker({
               })}
             </div>
           )}
+          {hasLoadedEntries && hasMoreEntries ? (
+            <div className="flex justify-center border-t px-6 py-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void loadMoreEntries()}
+                disabled={
+                  isLoadingMore || isRefreshing || activeAction !== null
+                }
+                aria-busy={isLoadingMore}
+              >
+                {isLoadingMore ? (
+                  <Loader2
+                    className="animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <span aria-live="polite">
+                  {isLoadingMore ? "Loading more..." : "Load more"}
+                </span>
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

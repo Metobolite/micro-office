@@ -17,11 +17,17 @@ export type FileRow = {
   path: string;
 };
 
+export type FilePageCursor = {
+  uploadedAt: string | null;
+  id: string;
+};
+
 export type FilesPageProps = {
   userId: string;
   teamId: string;
   initialFiles: FileItem[];
   initialHasMore?: boolean;
+  initialNextCursor?: FilePageCursor | null;
   initialLoadFailed?: boolean;
 };
 

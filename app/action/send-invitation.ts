@@ -5,7 +5,9 @@ import {
   createInvitationToken,
   getInvitationExpiresAt,
   hashInvitationToken,
+  isValidInvitationEmail,
   isInvitationRole,
+  isValidTeamId,
 } from "@/app/lib/invitations";
 import {
   createClient,
@@ -29,11 +31,15 @@ export async function sendInvitation(
   }
 
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedTeamId = teamId.trim();
 
-  if (!normalizedEmail || !teamId) {
+  if (
+    !isValidInvitationEmail(normalizedEmail) ||
+    !isValidTeamId(normalizedTeamId)
+  ) {
     return {
       success: false,
-      message: "Email address or team information is missing.",
+      message: "Enter a valid email address and workspace.",
     };
   }
 
@@ -51,7 +57,7 @@ export async function sendInvitation(
     .from("team_members")
     .select("role")
     .eq("user_id", user.id)
-    .eq("team_id", teamId)
+    .eq("team_id", normalizedTeamId)
     .in("role", ["owner", "admin"])
     .maybeSingle();
 
@@ -77,26 +83,41 @@ export async function sendInvitation(
     };
   }
 
-  const [
-    { data: team },
-    { data: existingMember },
-    { data: existingInvitation },
-  ] = await Promise.all([
-    supabase.from("teams").select("name").eq("id", teamId).single(),
+  const [teamResult, memberResult, invitationResult] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("name")
+      .eq("id", normalizedTeamId)
+      .single(),
     supabase
       .from("team_members")
       .select("team_id")
-      .eq("team_id", teamId)
+      .eq("team_id", normalizedTeamId)
       .ilike("email", normalizedEmail)
       .maybeSingle(),
     supabase
       .from("team_invitations")
       .select("id")
-      .eq("team_id", teamId)
+      .eq("team_id", normalizedTeamId)
       .eq("email", normalizedEmail)
       .eq("status", "pending")
       .maybeSingle(),
   ]);
+
+  const lookupError =
+    teamResult.error || memberResult.error || invitationResult.error;
+
+  if (lookupError) {
+    console.error("Invitation lookup error:", lookupError);
+    return {
+      success: false,
+      message: "Invitation information could not be verified.",
+    };
+  }
+
+  const team = teamResult.data;
+  const existingMember = memberResult.data;
+  const existingInvitation = invitationResult.data;
 
   if (existingMember) {
     return {
@@ -114,7 +135,7 @@ export async function sendInvitation(
 
   const token = createInvitationToken();
   const { error: insertError } = await supabase.from("team_invitations").insert({
-    team_id: teamId,
+    team_id: normalizedTeamId,
     email: normalizedEmail,
     role,
     token_hash: hashInvitationToken(token),
@@ -127,7 +148,10 @@ export async function sendInvitation(
 
     return {
       success: false,
-      message: `Invitation could not be saved: ${insertError.message}`,
+      message:
+        insertError.code === "23505"
+          ? "This email address has already been invited to this team."
+          : "Invitation could not be sent. Please try again.",
     };
   }
 
@@ -146,10 +170,12 @@ export async function sendInvitation(
   });
 
   if (!emailResult.success) {
+    console.error("Team invitation email error:", emailResult.message);
     return {
       success: false,
       inviteCreated: true,
-      message: `Invitation was saved, but the email could not be sent: ${emailResult.message}`,
+      message:
+        "Invitation was saved, but the email could not be sent. Please try again later.",
     };
   }
 

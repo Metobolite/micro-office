@@ -4,13 +4,24 @@ import { DeleteConfirmationDialog } from "@/app/components/files/DeleteConfirmat
 import {
   determineFileType,
   FILE_PAGE_SIZE,
+  FILE_UPLOAD_BATCH_LIMIT,
+  FILE_UPLOAD_CONCURRENCY,
   formatFileSize,
   getFileExtension,
+  getFilePageCursor,
+  getFilePageCursorFilter,
+  mapWithConcurrency,
   mapFileRows,
+  MAX_FILE_UPLOAD_BYTES,
   sanitizeStorageFileName,
 } from "@/app/lib/file-utils";
 import { supabase } from "@/app/lib/supabase";
-import type { FileItem, FileRow, FilesPageProps } from "@/app/types/file";
+import type {
+  FileItem,
+  FilePageCursor,
+  FileRow,
+  FilesPageProps,
+} from "@/app/types/file";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,10 +56,19 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type FileCategoryFilter = "all" | FileItem["type"];
+
+type FileListFilters = {
+  category: FileCategoryFilter;
+  search: string;
+};
+
+const FILE_PREVIEW_URL_TTL_SECONDS = 15 * 60;
+const FILE_ACTION_URL_TTL_SECONDS = 5 * 60;
+const FILE_SEARCH_DEBOUNCE_MS = 300;
 
 const categoryOptions: Array<{
   value: FileCategoryFilter;
@@ -88,6 +108,59 @@ function getFileIcon(type: FileItem["type"]) {
     default:
       return File;
   }
+}
+
+function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
+async function signImagePreviews(files: FileItem[]) {
+  const imagePaths = Array.from(
+    new Set(
+      files.flatMap((file) =>
+        file.type === "image" ? [file.path] : [],
+      ),
+    ),
+  );
+
+  if (imagePaths.length === 0) return files;
+
+  const { data, error } = await supabase.storage
+    .from("user-files")
+    .createSignedUrls(imagePaths, FILE_PREVIEW_URL_TTL_SECONDS);
+
+  if (error) {
+    console.error("Image preview URL error:", error);
+    return files;
+  }
+
+  const previewUrlByPath = new Map(
+    (data ?? []).flatMap((signedUrl) =>
+      signedUrl.path && signedUrl.signedUrl
+        ? [[signedUrl.path, signedUrl.signedUrl] as const]
+        : [],
+    ),
+  );
+
+  return files.map((file) => ({
+    ...file,
+    url: previewUrlByPath.get(file.path) ?? file.url,
+  }));
+}
+
+function mergePreviewUrls(currentFiles: FileItem[], previewFiles: FileItem[]) {
+  const previewUrlByPath = new Map(
+    previewFiles.flatMap((file) =>
+      file.url ? [[file.path, file.url] as const] : [],
+    ),
+  );
+
+  return currentFiles.map((file) => {
+    const previewUrl = previewUrlByPath.get(file.path);
+    return previewUrl && previewUrl !== file.url
+      ? { ...file, url: previewUrl }
+      : file;
+  });
 }
 
 type FileActionsProps = {
@@ -162,18 +235,26 @@ export function FilesPage({
   teamId,
   initialFiles,
   initialHasMore = false,
+  initialNextCursor = null,
   initialLoadFailed = false,
 }: FilesPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
+  const previewRefreshPathsRef = useRef(new Set<string>());
+  const activeListAbortControllerRef = useRef<AbortController | null>(null);
+  const listRequestIdRef = useRef(0);
+  const didInitializeFiltersRef = useRef(false);
   const [files, setFiles] = useState<FileItem[]>(initialFiles);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] =
     useState<FileCategoryFilter>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(initialHasMore);
+  const [nextCursor, setNextCursor] =
+    useState<FilePageCursor | null>(initialNextCursor);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(
@@ -185,38 +266,78 @@ export function FilesPage({
   const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
 
   const fetchFilePage = useCallback(
-    async (offset: number) => {
-      const { data, error } = await supabase
+    async (
+      cursor: FilePageCursor | null,
+      filters: FileListFilters,
+      signal: AbortSignal,
+    ) => {
+      let query = supabase
         .from("files")
         .select("id, name, type, size, uploaded_at, path")
         .eq("user_id", userId)
-        .eq("team_id", teamId)
-        .order("uploaded_at", { ascending: false })
-        .range(offset, offset + FILE_PAGE_SIZE);
+        .eq("team_id", teamId);
+      const cursorFilter = cursor
+        ? getFilePageCursorFilter(cursor)
+        : null;
+
+      if (cursor && !cursorFilter) {
+        return {
+          error: new Error("The file page cursor is invalid."),
+          files: [] as FileItem[],
+          hasMore: false,
+          nextCursor: null,
+        };
+      }
+
+      const normalizedSearch = filters.search.trim().slice(0, 100);
+      if (normalizedSearch) {
+        query = query.ilike(
+          "name",
+          `%${escapeLikePattern(normalizedSearch)}%`,
+        );
+      }
+
+      if (filters.category === "other") {
+        const typeFilter = "type.eq.other,type.is.null";
+        query = cursorFilter
+          ? query.or(
+              `and(or(${typeFilter}),or(${cursorFilter}))`,
+            )
+          : query.or(typeFilter);
+      } else if (filters.category !== "all") {
+        query = query.eq("type", filters.category);
+      }
+
+      if (cursorFilter && filters.category !== "other") {
+        query = query.or(cursorFilter);
+      }
+
+      const { data, error } = await query
+        .order("uploaded_at", { ascending: false, nullsFirst: false })
+        .order("id", { ascending: false })
+        .limit(FILE_PAGE_SIZE + 1)
+        .abortSignal(signal);
 
       if (error) {
-        return { error, files: [] as FileItem[], hasMore: false };
+        return {
+          error,
+          files: [] as FileItem[],
+          hasMore: false,
+          nextCursor: null,
+        };
       }
 
       const allFileRows = (data ?? []) as FileRow[];
       const fileRows = allFileRows.slice(0, FILE_PAGE_SIZE);
-      const { data: signedUrls, error: signedUrlsError } = fileRows.length
-        ? await supabase.storage
-            .from("user-files")
-            .createSignedUrls(
-              fileRows.map((file) => file.path),
-              3660,
-            )
-        : { data: [], error: null };
-
-      if (signedUrlsError) {
-        console.error("Signed URL error:", signedUrlsError);
-      }
+      const pageFiles = await signImagePreviews(mapFileRows(fileRows));
+      const pageNextCursor = getFilePageCursor(fileRows.at(-1));
 
       return {
         error: null,
-        files: mapFileRows(fileRows, signedUrls ?? []),
-        hasMore: allFileRows.length > FILE_PAGE_SIZE,
+        files: pageFiles,
+        hasMore:
+          allFileRows.length > FILE_PAGE_SIZE && pageNextCursor !== null,
+        nextCursor: pageNextCursor,
       };
     },
     [teamId, userId],
@@ -224,10 +345,28 @@ export function FilesPage({
 
   const fetchFiles = useCallback(
     async (showLoader = true) => {
-      if (showLoader) setIsLoading(true);
+      activeListAbortControllerRef.current?.abort();
+      const abortController = new AbortController();
+      activeListAbortControllerRef.current = abortController;
+      const requestId = listRequestIdRef.current + 1;
+      listRequestIdRef.current = requestId;
+
+      setIsLoading(showLoader);
+      setIsLoadingMore(false);
       setLoadError(null);
 
-      const result = await fetchFilePage(0);
+      const result = await fetchFilePage(
+        null,
+        { category: selectedCategory, search: debouncedSearchTerm },
+        abortController.signal,
+      );
+
+      if (
+        abortController.signal.aborted ||
+        requestId !== listRequestIdRef.current
+      ) {
+        return null;
+      }
 
       if (result.error) {
         console.error("File listing error:", result.error);
@@ -235,18 +374,39 @@ export function FilesPage({
       } else {
         setFiles(result.files);
         setHasMore(result.hasMore);
+        setNextCursor(result.nextCursor);
       }
 
-      if (showLoader) setIsLoading(false);
+      setIsLoading(false);
+      if (activeListAbortControllerRef.current === abortController) {
+        activeListAbortControllerRef.current = null;
+      }
+      return result;
     },
-    [fetchFilePage],
+    [debouncedSearchTerm, fetchFilePage, selectedCategory],
   );
 
   const handleLoadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || !hasMore || !nextCursor) return;
 
+    activeListAbortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    activeListAbortControllerRef.current = abortController;
+    const requestId = listRequestIdRef.current + 1;
+    listRequestIdRef.current = requestId;
     setIsLoadingMore(true);
-    const result = await fetchFilePage(files.length);
+    const result = await fetchFilePage(
+      nextCursor,
+      { category: selectedCategory, search: debouncedSearchTerm },
+      abortController.signal,
+    );
+
+    if (
+      abortController.signal.aborted ||
+      requestId !== listRequestIdRef.current
+    ) {
+      return;
+    }
 
     if (result.error) {
       console.error("Additional files could not be loaded:", result.error);
@@ -259,24 +419,63 @@ export function FilesPage({
         return Array.from(filesById.values());
       });
       setHasMore(result.hasMore);
+      setNextCursor(result.nextCursor);
     }
 
     setIsLoadingMore(false);
-  }, [fetchFilePage, files.length, hasMore, isLoadingMore]);
+    if (activeListAbortControllerRef.current === abortController) {
+      activeListAbortControllerRef.current = null;
+    }
+  }, [
+    debouncedSearchTerm,
+    fetchFilePage,
+    hasMore,
+    isLoadingMore,
+    nextCursor,
+    selectedCategory,
+  ]);
 
-  const filteredFiles = useMemo(() => {
-    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+    }, FILE_SEARCH_DEBOUNCE_MS);
 
-    return files.filter((file) => {
-      const matchesSearch = file.name
-        .toLowerCase()
-        .includes(normalizedSearchTerm);
-      const matchesCategory =
-        selectedCategory === "all" || file.type === selectedCategory;
+    return () => window.clearTimeout(timeoutId);
+  }, [searchTerm]);
 
-      return matchesSearch && matchesCategory;
+  useEffect(() => {
+    if (!didInitializeFiltersRef.current) {
+      didInitializeFiltersRef.current = true;
+      return;
+    }
+
+    void fetchFiles();
+  }, [debouncedSearchTerm, fetchFiles, selectedCategory]);
+
+  useEffect(() => {
+    let disposed = false;
+
+    void signImagePreviews(initialFiles).then((previewFiles) => {
+      if (!disposed) {
+        setFiles((currentFiles) =>
+          mergePreviewUrls(currentFiles, previewFiles),
+        );
+      }
     });
-  }, [files, searchTerm, selectedCategory]);
+
+    return () => {
+      disposed = true;
+    };
+  }, [initialFiles]);
+
+  useEffect(
+    () => () => {
+      activeListAbortControllerRef.current?.abort();
+    },
+    [],
+  );
+
+  const filteredFiles = files;
 
   const hasActiveFilters =
     searchTerm.trim().length > 0 || selectedCategory !== "all";
@@ -286,6 +485,7 @@ export function FilesPage({
 
   const clearFilters = () => {
     setSearchTerm("");
+    setDebouncedSearchTerm("");
     setSelectedCategory("all");
   };
 
@@ -293,50 +493,88 @@ export function FilesPage({
     async (selectedFiles: File[]) => {
       if (selectedFiles.length === 0 || isUploading) return;
 
+      if (selectedFiles.length > FILE_UPLOAD_BATCH_LIMIT) {
+        toast.error(
+          `Upload up to ${FILE_UPLOAD_BATCH_LIMIT} files at a time.`,
+        );
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      const oversizedFailures = selectedFiles.flatMap((file) =>
+        file.size > MAX_FILE_UPLOAD_BYTES
+          ? [`${file.name}: Files must be 100 MB or smaller.`]
+          : [],
+      );
+      const uploadableFiles = selectedFiles.filter(
+        (file) => file.size <= MAX_FILE_UPLOAD_BYTES,
+      );
+
+      if (uploadableFiles.length === 0) {
+        toast.error("Files could not be uploaded.", {
+          description: oversizedFailures[0],
+        });
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
       setIsUploading(true);
       const toastId = toast.loading(
-        selectedFiles.length === 1
-          ? `Uploading "${selectedFiles[0].name}"...`
-          : `Uploading ${selectedFiles.length} files...`,
+        uploadableFiles.length === 1
+          ? `Uploading "${uploadableFiles[0].name}"...`
+          : `Uploading ${uploadableFiles.length} files...`,
       );
-      const uploadBatchId = Date.now();
-      const failures: string[] = [];
-      let uploadedCount = 0;
+      const uploadResults = await mapWithConcurrency(
+        uploadableFiles,
+        FILE_UPLOAD_CONCURRENCY,
+        async (file) => {
+          const cleanFileName = sanitizeStorageFileName(file.name);
+          const extension = getFileExtension(file.name);
+          const fileType = determineFileType(extension);
+          const filePath = `${userId}/${crypto.randomUUID()}_${cleanFileName}`;
 
-      for (const [index, file] of selectedFiles.entries()) {
-        const cleanFileName = sanitizeStorageFileName(file.name);
-        const extension = getFileExtension(file.name);
-        const fileType = determineFileType(extension);
-        const filePath = `${userId}/${uploadBatchId}_${index}_${cleanFileName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("user-files")
+            .upload(filePath, file, { upsert: false });
 
-        const { error: uploadError } = await supabase.storage
-          .from("user-files")
-          .upload(filePath, file, { upsert: false });
+          if (uploadError) {
+            return {
+              error: `${file.name}: ${uploadError.message}`,
+              success: false,
+            };
+          }
 
-        if (uploadError) {
-          failures.push(`${file.name}: ${uploadError.message}`);
-          continue;
-        }
+          const { error: insertError } = await supabase.from("files").insert({
+            user_id: userId,
+            team_id: teamId,
+            name: file.name,
+            type: fileType,
+            size: formatFileSize(file.size),
+            uploaded_at: new Date().toISOString(),
+            category: fileType,
+            path: filePath,
+          });
 
-        const { error: insertError } = await supabase.from("files").insert({
-          user_id: userId,
-          team_id: teamId,
-          name: file.name,
-          type: fileType,
-          size: formatFileSize(file.size),
-          uploaded_at: new Date().toISOString(),
-          category: fileType,
-          path: filePath,
-        });
+          if (insertError) {
+            await supabase.storage.from("user-files").remove([filePath]);
+            return {
+              error: `${file.name}: ${insertError.message}`,
+              success: false,
+            };
+          }
 
-        if (insertError) {
-          failures.push(`${file.name}: ${insertError.message}`);
-          await supabase.storage.from("user-files").remove([filePath]);
-          continue;
-        }
-
-        uploadedCount += 1;
-      }
+          return { error: null, success: true };
+        },
+      );
+      const failures = [
+        ...oversizedFailures,
+        ...uploadResults.flatMap((result) =>
+          result.error ? [result.error] : [],
+        ),
+      ];
+      const uploadedCount = uploadResults.filter(
+        (result) => result.success,
+      ).length;
 
       if (uploadedCount === selectedFiles.length) {
         toast.success(
@@ -398,22 +636,11 @@ export function FilesPage({
   const handleDeleteConfirmed = async (file: FileItem) => {
     const toastId = toast.loading(`Deleting "${file.name}"...`);
 
-    const { error: deleteStorageError } = await supabase.storage
-      .from("user-files")
-      .remove([file.path]);
-
-    if (deleteStorageError) {
-      toast.error("The file could not be removed from storage.", {
-        id: toastId,
-        description: deleteStorageError.message,
-      });
-      return;
-    }
-
     const { error: deleteDbError } = await supabase
       .from("files")
       .delete()
       .eq("id", file.id)
+      .eq("user_id", userId)
       .eq("team_id", teamId);
 
     if (deleteDbError) {
@@ -427,6 +654,20 @@ export function FilesPage({
     setFiles((currentFiles) =>
       currentFiles.filter((currentFile) => currentFile.id !== file.id),
     );
+
+    const { error: deleteStorageError } = await supabase.storage
+      .from("user-files")
+      .remove([file.path]);
+
+    if (deleteStorageError) {
+      console.error("Orphaned file cleanup error:", deleteStorageError);
+      toast.warning(`"${file.name}" was removed from the file list.`, {
+        id: toastId,
+        description: "Storage cleanup could not be completed.",
+      });
+      return;
+    }
+
     toast.success(`"${file.name}" was deleted.`, { id: toastId });
   };
 
@@ -434,47 +675,92 @@ export function FilesPage({
     const toastId = toast.loading(`Preparing "${file.name}"...`);
     const { data, error } = await supabase.storage
       .from("user-files")
-      .download(file.path);
+      .createSignedUrl(file.path, FILE_ACTION_URL_TTL_SECONDS, {
+        download: file.name,
+      });
 
-    if (error) {
+    if (error || !data?.signedUrl) {
       toast.error("The file could not be downloaded.", {
         id: toastId,
-        description: error.message,
+        description: error?.message,
       });
       return;
     }
 
-    const url = URL.createObjectURL(data);
     const link = document.createElement("a");
-    link.href = url;
+    link.href = data.signedUrl;
     link.download = file.name;
+    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
     toast.success("Download started.", { id: toastId });
   };
 
-  const handleCopyLink = (file: FileItem) => {
-    if (!file.url) {
-      toast.error("A link is not available for this file yet.");
+  const handleCopyLink = async (file: FileItem) => {
+    const { data, error } = await supabase.storage
+      .from("user-files")
+      .createSignedUrl(file.path, FILE_ACTION_URL_TTL_SECONDS);
+
+    if (error || !data?.signedUrl) {
+      toast.error("A temporary link could not be created.", {
+        description: error?.message,
+      });
       return;
     }
 
-    void navigator.clipboard
-      .writeText(file.url)
-      .then(() => toast.success("Temporary link copied."))
-      .catch(() => toast.error("The link could not be copied."));
+    try {
+      await navigator.clipboard.writeText(data.signedUrl);
+      toast.success("Temporary link copied.");
+    } catch {
+      toast.error("The link could not be copied.");
+    }
   };
 
-  const handleOpenFile = (file: FileItem) => {
-    if (!file.url) {
-      toast.error("A preview is not available for this file.");
+  const handleOpenFile = async (file: FileItem) => {
+    const previewWindow = window.open("about:blank", "_blank");
+    if (!previewWindow) {
+      toast.error("Allow pop-ups to open this file.");
       return;
     }
 
-    window.open(file.url, "_blank", "noopener,noreferrer");
+    previewWindow.opener = null;
+    const { data, error } = await supabase.storage
+      .from("user-files")
+      .createSignedUrl(file.path, FILE_ACTION_URL_TTL_SECONDS);
+
+    if (error || !data?.signedUrl) {
+      previewWindow.close();
+      toast.error("The file could not be opened.", {
+        description: error?.message,
+      });
+      return;
+    }
+
+    previewWindow.location.replace(data.signedUrl);
   };
+
+  const refreshImagePreview = useCallback(async (file: FileItem) => {
+    if (previewRefreshPathsRef.current.has(file.path)) return;
+
+    previewRefreshPathsRef.current.add(file.path);
+    const { data, error } = await supabase.storage
+      .from("user-files")
+      .createSignedUrl(file.path, FILE_PREVIEW_URL_TTL_SECONDS);
+
+    if (error || !data?.signedUrl) {
+      console.error("Image preview refresh error:", error);
+      return;
+    }
+
+    setFiles((currentFiles) =>
+      currentFiles.map((currentFile) =>
+        currentFile.id === file.id
+          ? { ...currentFile, url: data.signedUrl }
+          : currentFile,
+      ),
+    );
+  }, []);
 
   const requestDelete = (file: FileItem) => {
     setFileToDelete(file);
@@ -575,6 +861,7 @@ export function FilesPage({
               <Input
                 placeholder="Search files..."
                 value={searchTerm}
+                maxLength={100}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 aria-label="Search files"
                 className="pl-9"
@@ -688,9 +975,7 @@ export function FilesPage({
                 </h3>
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                   {hasActiveFilters
-                    ? hasMore
-                      ? "No matches in the loaded files. Load more or change the active filters."
-                      : "Try a different search or clear the active filters."
+                    ? "Try a different search or clear the active filters."
                     : "Upload the first file for this team. You can also drag and drop it here."}
                 </p>
                 <Button
@@ -726,13 +1011,24 @@ export function FilesPage({
                     <button
                       type="button"
                       className="relative flex h-32 w-full items-center justify-center overflow-hidden bg-muted/40 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                      onClick={() => handleOpenFile(file)}
+                      onClick={() => void handleOpenFile(file)}
                       aria-label={`Open ${file.name}`}
                     >
                       {hasImagePreview ? (
-                        <span
-                          className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-[1.03]"
-                          style={{ backgroundImage: `url("${file.url}")` }}
+                        // The URL expires quickly, so it should not enter Next's
+                        // persistent image optimizer cache.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={file.url}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          onError={() => void refreshImagePreview(file)}
+                          onLoad={() =>
+                            previewRefreshPathsRef.current.delete(file.path)
+                          }
+                          className="absolute inset-0 size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                         />
                       ) : (
                         <span
@@ -752,7 +1048,7 @@ export function FilesPage({
                         <button
                           type="button"
                           className="min-w-0 flex-1 text-left outline-none focus-visible:underline"
-                          onClick={() => handleOpenFile(file)}
+                          onClick={() => void handleOpenFile(file)}
                         >
                           <h3 className="truncate text-sm font-medium" title={file.name}>
                             {file.name}
@@ -792,7 +1088,7 @@ export function FilesPage({
                       <button
                         type="button"
                         className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:underline"
-                        onClick={() => handleOpenFile(file)}
+                        onClick={() => void handleOpenFile(file)}
                       >
                         <span
                           className={cn(

@@ -1,6 +1,9 @@
 import { acceptInvitation } from "@/app/action/accept-invitation";
 import { ThemeToggle } from "@/app/components/theme/theme-toggle";
-import { hashInvitationToken } from "@/app/lib/invitations";
+import {
+  hashInvitationToken,
+  isValidInvitationToken,
+} from "@/app/lib/invitations";
 import {
   createClient,
   getCurrentIdentity,
@@ -18,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 function getFirstParam(value?: string | string[]) {
   if (Array.isArray(value)) {
@@ -53,11 +56,16 @@ export default async function InvitePage({
   params,
   searchParams,
 }: InvitePageProps) {
-  const [{ token }, resolvedSearchParams, { user }] = await Promise.all([
+  const [{ token }, resolvedSearchParams] = await Promise.all([
     params,
     searchParams,
-    getCurrentIdentity(),
   ]);
+
+  if (!isValidInvitationToken(token)) {
+    notFound();
+  }
+
+  const { user } = await getCurrentIdentity();
   const pageError = getErrorMessage(getFirstParam(resolvedSearchParams?.error));
 
   if (!user) {

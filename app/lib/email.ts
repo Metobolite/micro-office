@@ -1,3 +1,5 @@
+import "server-only";
+
 import type {
   SendEmailResult,
   SendTeamInvitationEmailParams,
@@ -57,6 +59,7 @@ export async function sendTeamInvitationEmail({
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(10_000),
       body: JSON.stringify({
         from: getSenderEmail(),
         to: [to],

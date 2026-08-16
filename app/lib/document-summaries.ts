@@ -5,6 +5,12 @@ import type {
 } from "@/app/types/document-summary";
 
 export const MAX_SUMMARY_DOCUMENT_BYTES = 20 * 1024 * 1024;
+// Early UX guard; Storage bucket limits and RLS remain authoritative.
+export const SUMMARY_DOCUMENT_BATCH_LIMIT = 10;
+export const DOCUMENT_PAGE_SIZE = 30;
+export const DOCUMENT_SEARCH_DEBOUNCE_MS = 300;
+export const SUMMARY_DOCUMENT_NAME_FILTER =
+  "name.ilike.%.pdf,name.ilike.%.doc,name.ilike.%.docx";
 
 export const SUMMARY_DOCUMENT_ACCEPT = [
   ".pdf",

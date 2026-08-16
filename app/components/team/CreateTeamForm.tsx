@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 export default function CreateTeamForm({
   userId,
@@ -19,16 +20,23 @@ export default function CreateTeamForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedTeamName = teamName.trim().replace(/\s+/g, " ");
+
+    if (normalizedTeamName.length < 2 || normalizedTeamName.length > 80) {
+      toast.error("Project name must be between 2 and 80 characters.");
+      return;
+    }
 
     startTransition(async () => {
       const { data: team, error: teamError } = await supabase
         .from("teams")
-        .insert({ name: teamName, owner_id: userId })
+        .insert({ name: normalizedTeamName, owner_id: userId })
         .select("id")
         .single();
 
       if (teamError || !team) {
         console.error("Team creation error:", teamError);
+        toast.error("Project could not be created. Please try again.");
         return;
       }
 
@@ -45,9 +53,21 @@ export default function CreateTeamForm({
 
       if (memberError) {
         console.error("Team member creation error:", memberError);
+        const { error: cleanupError } = await supabase
+          .from("teams")
+          .delete()
+          .eq("id", team.id)
+          .eq("owner_id", userId);
+
+        if (cleanupError) {
+          console.error("Incomplete team cleanup error:", cleanupError);
+        }
+
+        toast.error("Project setup could not be completed. Please try again.");
         return;
       }
 
+      toast.success("Project created.");
       router.push("/teams");
     });
   };
@@ -81,6 +101,8 @@ export default function CreateTeamForm({
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
             required
+            minLength={2}
+            maxLength={80}
             aria-label="Project name"
             className="py-2"
           />

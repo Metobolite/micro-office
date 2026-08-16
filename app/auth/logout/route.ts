@@ -6,6 +6,19 @@ import {
 } from "../../lib/supabaseServer";
 
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  const fetchSite = req.headers.get("sec-fetch-site");
+
+  if (
+    (origin && origin !== req.nextUrl.origin) ||
+    (!origin && fetchSite === "cross-site")
+  ) {
+    return NextResponse.json(
+      { error: "Cross-site logout requests are not allowed." },
+      { status: 403 },
+    );
+  }
+
   const supabase = await createClient();
   const { data, error } = await getCurrentClaims();
 
@@ -22,7 +35,11 @@ export async function POST(req: NextRequest) {
 
   revalidatePath("/", "layout");
 
-  return NextResponse.redirect(new URL("/auth/login", req.url), {
+  const response = NextResponse.redirect(new URL("/auth/login", req.url), {
     status: 302,
   });
+  response.headers.set("Location", "/auth/login");
+  response.headers.set("Cache-Control", "no-store");
+
+  return response;
 }

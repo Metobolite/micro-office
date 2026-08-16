@@ -1,6 +1,9 @@
 "use server";
 
-import { hashInvitationToken } from "@/app/lib/invitations";
+import {
+  hashInvitationToken,
+  isValidInvitationToken,
+} from "@/app/lib/invitations";
 import {
   createClient,
   getCurrentIdentity,
@@ -8,7 +11,11 @@ import {
 import type { TeamInvitationRow } from "@/app/types/invitation";
 import { redirect } from "next/navigation";
 
-export async function acceptInvitation(token: string) {
+export async function acceptInvitation(token: unknown) {
+  if (!isValidInvitationToken(token)) {
+    redirect("/teams");
+  }
+
   const tokenHash = hashInvitationToken(token);
   const supabase = await createClient();
   const { user } = await getCurrentIdentity();
@@ -55,5 +62,5 @@ export async function acceptInvitation(token: string) {
     redirect(`/invite/${token}?error=accept`);
   }
 
-  redirect(`/dashboard?teamId=${acceptedTeamId}`);
+  redirect(`/dashboard?teamId=${encodeURIComponent(String(acceptedTeamId))}`);
 }

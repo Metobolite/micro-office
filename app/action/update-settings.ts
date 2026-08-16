@@ -36,10 +36,6 @@ function isWorkspaceSettingsInput(
   );
 }
 
-function isMissingDatabaseFunction(code?: string) {
-  return code === "PGRST202" || code === "42883";
-}
-
 function isValidAvatarUrl(value: string) {
   if (!value) return true;
 
@@ -100,9 +96,10 @@ export async function updateProfileSettings(
   });
 
   if (authError) {
+    console.error("Profile auth update error:", authError);
     return {
       success: false,
-      message: `Profile could not be updated: ${authError.message}`,
+      message: "Profile could not be updated. Please try again.",
     };
   }
 
@@ -134,9 +131,8 @@ export async function updateProfileSettings(
     return {
       success: true,
       warning: true,
-      message: isMissingDatabaseFunction(rpcError.code)
-        ? "Profile saved to your account. Install the settings database functions to sync team cards."
-        : "Profile saved to your account, but team cards could not be synchronized.",
+      message:
+        "Profile saved to your account, but team cards could not be synchronized.",
     };
   }
 
@@ -206,9 +202,7 @@ export async function updateWorkspaceSettings(
     console.error("Workspace settings update error:", rpcError);
     return {
       success: false,
-      message: isMissingDatabaseFunction(rpcError.code)
-        ? "Install the settings database functions before updating the workspace."
-        : "Workspace could not be updated. Please try again.",
+      message: "Workspace could not be updated. Please try again.",
     };
   }
 

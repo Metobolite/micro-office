@@ -1,11 +1,11 @@
 import { ThemeToggle } from "@/app/components/theme/theme-toggle";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
-import { getTeamMemberships } from "@/app/lib/team-context";
 import {
-  createClient,
-  getCurrentIdentity,
-} from "@/app/lib/supabaseServer";
-import type { TeamListItem, TeamRecord } from "@/app/types/team";
+  getMembershipTeam,
+  getTeamMemberships,
+} from "@/app/lib/team-context";
+import { getCurrentIdentity } from "@/app/lib/supabaseServer";
+import type { TeamListItem } from "@/app/types/team";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -39,23 +39,10 @@ export default async function TeamsPage() {
   }
 
   const { memberships } = await getTeamMemberships(user.id);
-  const teamIds = Array.from(
-    new Set(memberships.map((membership) => membership.team_id)),
-  );
-
-  const supabase = await createClient();
-  const { data: teams } = teamIds.length
-    ? await supabase
-        .from("teams")
-        .select("id, name")
-        .in("id", teamIds)
-    : { data: [] as TeamRecord[] };
-
-  const teamsById = new Map((teams || []).map((team) => [team.id, team]));
 
   const teamList: TeamListItem[] = memberships
     .map((membership) => {
-      const team = teamsById.get(membership.team_id);
+      const team = getMembershipTeam(membership);
 
       if (!team) return null;
 

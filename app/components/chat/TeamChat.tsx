@@ -19,6 +19,18 @@ import {
 } from "react";
 
 const INITIAL_MESSAGE_LIMIT = 200;
+const MAX_MESSAGE_LENGTH = 4_000;
+
+function getMessageWindow(messages: Message[]) {
+  return [...messages]
+    .sort((first, second) => {
+      const timestampOrder = first.inserted_at.localeCompare(second.inserted_at);
+
+      return timestampOrder || first.id.localeCompare(second.id);
+    })
+    .slice(-INITIAL_MESSAGE_LIMIT);
+}
+
 const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", {
   numeric: "always",
 });
@@ -108,7 +120,9 @@ export default function TeamChat({
   initialMessagesLoaded,
   initialMessagesRequestedAt,
 }: TeamChatProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(() =>
+    getMessageWindow(initialMessages),
+  );
   const [newMessage, setNewMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedMessagesRef = useRef(false);
@@ -176,11 +190,7 @@ export default function TeamChat({
             .map((message) => [message.id, message]),
         );
 
-        return Array.from(messagesById.values()).sort(
-          (first, second) =>
-            new Date(first.inserted_at).getTime() -
-            new Date(second.inserted_at).getTime(),
-        );
+        return getMessageWindow(Array.from(messagesById.values()));
       });
     };
 
@@ -198,13 +208,17 @@ export default function TeamChat({
           const incomingMessage = payload.new as Message;
           if (disposed || incomingMessage.team_id !== teamId) return;
 
-          setMessages((currentMessages) =>
-            currentMessages.some(
-              (message) => message.id === incomingMessage.id,
-            )
-              ? currentMessages
-              : [...currentMessages, incomingMessage],
-          );
+          setMessages((currentMessages) => {
+            if (
+              currentMessages.some(
+                (message) => message.id === incomingMessage.id,
+              )
+            ) {
+              return currentMessages;
+            }
+
+            return getMessageWindow([...currentMessages, incomingMessage]);
+          });
         },
       )
       .subscribe((status) => {
@@ -234,12 +248,13 @@ export default function TeamChat({
   ]);
 
   const handleSend = useCallback(async () => {
-    if (!newMessage.trim()) return;
+    const content = newMessage.trim();
+    if (!content || content.length > MAX_MESSAGE_LENGTH) return;
 
     const { error } = await supabase.from("messages").insert({
       user_id: userId,
       team_id: teamId,
-      content: newMessage,
+      content,
       user_name: userName,
     });
 
@@ -344,6 +359,7 @@ export default function TeamChat({
                 <Input
                   placeholder="Write a message..."
                   value={newMessage}
+                  maxLength={MAX_MESSAGE_LENGTH}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSend();

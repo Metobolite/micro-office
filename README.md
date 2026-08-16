@@ -39,10 +39,3 @@ npm run lint
 npx tsc --noEmit
 npm run build
 ```
-
-## Database performance
-
-SQL migrations live in `supabase/migrations`. Apply them to the target
-Supabase project as part of deployment. The performance-index migration covers
-the filter and ordering patterns used by dashboard navigation and the main
-feature pages.

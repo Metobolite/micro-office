@@ -1,7 +1,6 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/app/components/sidebar";
 import { DashboardHeader } from "@/app/components/dashboard/dashboard-header";
-import { AppToaster } from "@/app/components/theme/app-toaster";
 import { redirect } from "next/navigation";
 import { getCurrentIdentity } from "@/app/lib/supabaseServer";
 import {
@@ -9,6 +8,14 @@ import {
   getTeamMemberships,
 } from "@/app/lib/team-context";
 import type { LayoutProps } from "@/app/types/common";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function DashboardLayout({
   children,
@@ -57,7 +64,6 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <AppToaster />
       <div className="flex min-h-screen w-full">
         {hasTeam && <AppSidebar />}
         <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden bg-accent">

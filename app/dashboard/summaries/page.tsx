@@ -1,5 +1,10 @@
 import { DocumentSummariesPage } from "@/app/components/document-summaries/DocumentSummariesPage";
-import { mapSummaryDocumentRows } from "@/app/lib/document-summaries";
+import {
+  DOCUMENT_PAGE_SIZE,
+  mapSummaryDocumentRows,
+  SUMMARY_DOCUMENT_NAME_FILTER,
+} from "@/app/lib/document-summaries";
+import { getFilePageCursor } from "@/app/lib/file-utils";
 import {
   getTeamContext,
   getTeamIdFromSearchParams,
@@ -44,11 +49,15 @@ export default async function DocumentSummariesRoute({
     .select("id, name, size, uploaded_at, path")
     .eq("user_id", user.id)
     .eq("team_id", activeTeamId)
-    .order("uploaded_at", { ascending: false });
+    .or(SUMMARY_DOCUMENT_NAME_FILTER)
+    .order("uploaded_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(DOCUMENT_PAGE_SIZE + 1);
+  const allDocumentRows = (data ?? []) as SummaryDocumentRow[];
+  const documentRows = allDocumentRows.slice(0, DOCUMENT_PAGE_SIZE);
+  const initialNextCursor = getFilePageCursor(documentRows.at(-1));
 
-  const initialDocuments = mapSummaryDocumentRows(
-    (data ?? []) as SummaryDocumentRow[],
-  );
+  const initialDocuments = mapSummaryDocumentRows(documentRows);
 
   return (
     <DocumentSummariesPage
@@ -56,6 +65,11 @@ export default async function DocumentSummariesRoute({
       userId={user.id}
       teamId={activeTeamId}
       initialDocuments={initialDocuments}
+      initialHasMore={
+        allDocumentRows.length > DOCUMENT_PAGE_SIZE &&
+        initialNextCursor !== null
+      }
+      initialNextCursor={initialNextCursor}
       initialLoadFailed={Boolean(documentsError)}
     />
   );

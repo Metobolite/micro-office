@@ -1,4 +1,4 @@
-import type { FileRow } from "@/app/types/file";
+import type { FilePageCursor, FileRow } from "@/app/types/file";
 import type { SummarizableDocumentExtension } from "@/app/lib/file-utils";
 
 export type SummaryDocumentRow = Pick<
@@ -19,5 +19,7 @@ export type DocumentSummariesPageProps = {
   userId: string;
   teamId: string;
   initialDocuments: SummaryDocument[];
+  initialHasMore?: boolean;
+  initialNextCursor?: FilePageCursor | null;
   initialLoadFailed: boolean;
 };

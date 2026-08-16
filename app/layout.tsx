@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { ThemeProvider } from "@/app/components/theme/theme-provider";
+import { AppToaster } from "@/app/components/theme/app-toaster";
 import type { LayoutProps } from "@/app/types/common";
 import "./globals.css";
 
@@ -35,7 +36,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className={manrope.className}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppToaster />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
