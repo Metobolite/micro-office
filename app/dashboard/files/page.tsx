@@ -1,8 +1,5 @@
 import { FilesPage } from "@/app/components/files/FilesPage";
-import {
-  getTeamContext,
-  getTeamIdFromSearchParams,
-} from "@/app/lib/team-context";
+import { getTeamContext } from "@/app/lib/team-context";
 import {
   FILE_PAGE_SIZE,
   getFilePageCursor,
@@ -13,31 +10,16 @@ import {
   getCurrentIdentity,
 } from "@/app/lib/supabaseServer";
 import type { FileRow } from "@/app/types/file";
-import type { TeamSearchPageProps } from "@/app/types/team";
 import { redirect } from "next/navigation";
 
-export default async function Page({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function Page() {
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    user.id,
-    requestedTeamId,
-  );
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

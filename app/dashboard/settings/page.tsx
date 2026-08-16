@@ -3,9 +3,7 @@ import { getCurrentUser } from "@/app/lib/supabaseServer";
 import {
   getMembershipTeam,
   getTeamContext,
-  getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
-import type { TeamSearchPageProps } from "@/app/types/team";
 import { redirect } from "next/navigation";
 
 function formatAccountDate(value: string) {
@@ -16,25 +14,14 @@ function formatAccountDate(value: string) {
   });
 }
 
-export default async function SettingsPage({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentUser(),
-    searchParams,
-  ]);
+export default async function SettingsPage() {
+  const { user, error } = await getCurrentUser();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, isRequestedTeamIdValid, memberships } =
-    await getTeamContext(user.id, requestedTeamId);
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId, memberships } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

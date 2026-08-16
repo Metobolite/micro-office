@@ -22,15 +22,6 @@ export type TeamContext = {
   memberships: TeamMembershipRecord[];
   teamIds: string[];
   activeTeamId: string | null;
-  isRequestedTeamIdValid: boolean;
-};
-
-export type TeamSearchParams = {
-  teamId?: string | string[];
-};
-
-export type TeamSearchPageProps = {
-  searchParams?: Promise<TeamSearchParams>;
 };
 
 export type TeamScopedProps = {

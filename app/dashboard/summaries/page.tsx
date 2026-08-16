@@ -5,39 +5,22 @@ import {
   SUMMARY_DOCUMENT_NAME_FILTER,
 } from "@/app/lib/document-summaries";
 import { getFilePageCursor } from "@/app/lib/file-utils";
-import {
-  getTeamContext,
-  getTeamIdFromSearchParams,
-} from "@/app/lib/team-context";
+import { getTeamContext } from "@/app/lib/team-context";
 import {
   createClient,
   getCurrentIdentity,
 } from "@/app/lib/supabaseServer";
 import type { SummaryDocumentRow } from "@/app/types/document-summary";
-import type { TeamSearchPageProps } from "@/app/types/team";
 import { redirect } from "next/navigation";
 
-export default async function DocumentSummariesRoute({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error: userError }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function DocumentSummariesRoute() {
+  const { user, error: userError } = await getCurrentIdentity();
 
   if (!user || userError) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    user.id,
-    requestedTeamId,
-  );
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

@@ -2,35 +2,22 @@ import TeamTimeTracker from "@/app/components/time-tracker/TeamTimeTracker";
 import {
   getMembershipTeam,
   getTeamContext,
-  getTeamIdFromSearchParams,
 } from "@/app/lib/team-context";
 import {
   createClient,
   getCurrentIdentity,
 } from "@/app/lib/supabaseServer";
-import type { TeamSearchPageProps } from "@/app/types/team";
 import type { TimeTrackerTask } from "@/app/types/time-tracker";
 import { redirect } from "next/navigation";
 
-export default async function TimeTrackerPage({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function TimeTrackerPage() {
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, isRequestedTeamIdValid, memberships } =
-    await getTeamContext(user.id, requestedTeamId);
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId, memberships } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

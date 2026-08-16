@@ -1,22 +1,12 @@
 import "server-only";
 
 import { cache } from "react";
+import { getStoredActiveTeamId } from "@/app/lib/active-team";
 import { createClient } from "@/app/lib/supabaseServer";
 import type {
   TeamContext,
   TeamMembershipRecord,
-  TeamSearchParams,
 } from "@/app/types/team";
-
-export function getTeamIdFromSearchParams(searchParams?: TeamSearchParams) {
-  const teamId = searchParams?.teamId;
-
-  if (Array.isArray(teamId)) {
-    return teamId[0] ?? null;
-  }
-
-  return teamId ?? null;
-}
 
 const loadTeamMemberships = cache(async (userId: string) => {
   const supabase = await createClient();
@@ -47,25 +37,22 @@ export function getMembershipTeam(membership?: TeamMembershipRecord | null) {
     : relatedTeams ?? null;
 }
 
-export async function getTeamContext(
-  userId: string,
-  requestedTeamId?: string | null,
-): Promise<TeamContext> {
-  const { memberships } = await loadTeamMemberships(userId);
+export async function getTeamContext(userId: string): Promise<TeamContext> {
+  const [{ memberships }, storedTeamId] = await Promise.all([
+    loadTeamMemberships(userId),
+    getStoredActiveTeamId(),
+  ]);
   const teamIds = Array.from(
     new Set(memberships.map((membership) => membership.team_id)),
   );
-  const requestedTeamBelongsToUser =
-    requestedTeamId != null && teamIds.includes(requestedTeamId);
+  const storedTeamBelongsToUser =
+    storedTeamId != null && teamIds.includes(storedTeamId);
   const activeTeamId =
-    requestedTeamBelongsToUser && requestedTeamId
-      ? requestedTeamId
-      : teamIds[0] ?? null;
+    storedTeamBelongsToUser && storedTeamId ? storedTeamId : teamIds[0] ?? null;
 
   return {
     memberships,
     teamIds,
     activeTeamId,
-    isRequestedTeamIdValid: requestedTeamBelongsToUser,
   };
 }

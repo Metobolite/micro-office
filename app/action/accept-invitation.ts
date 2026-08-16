@@ -8,6 +8,7 @@ import {
   createClient,
   getCurrentIdentity,
 } from "@/app/lib/supabaseServer";
+import { setStoredActiveTeamId } from "@/app/lib/active-team";
 import type { TeamInvitationRow } from "@/app/types/invitation";
 import { redirect } from "next/navigation";
 
@@ -62,5 +63,6 @@ export async function acceptInvitation(token: unknown) {
     redirect(`/invite/${token}?error=accept`);
   }
 
-  redirect(`/dashboard?teamId=${encodeURIComponent(String(acceptedTeamId))}`);
+  await setStoredActiveTeamId(String(acceptedTeamId));
+  redirect("/dashboard");
 }

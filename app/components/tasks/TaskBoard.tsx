@@ -38,7 +38,6 @@ type TaskBoardProps = {
   tasksByStatus: TasksByStatus;
   visibleTasksByStatus: TasksByStatus;
   hasActiveFilters: boolean;
-  isReordering: boolean;
   onDragEnd: (result: DropResult) => void;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
@@ -47,7 +46,6 @@ type TaskBoardProps = {
 type TaskCardProps = {
   task: Task;
   index: number;
-  isReordering: boolean;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
 };
@@ -55,7 +53,6 @@ type TaskCardProps = {
 const TaskCard = memo(function TaskCard({
   task,
   index,
-  isReordering,
   onEdit,
   onDelete,
 }: TaskCardProps) {
@@ -63,11 +60,7 @@ const TaskCard = memo(function TaskCard({
   const priority = TASK_PRIORITY_CONFIG[task.priority];
 
   return (
-    <Draggable
-      draggableId={task.id}
-      index={index}
-      isDragDisabled={isReordering}
-    >
+    <Draggable draggableId={task.id} index={index}>
       {(dragProvided, dragSnapshot) => (
         <article
           ref={dragProvided.innerRef}
@@ -98,7 +91,6 @@ const TaskCard = memo(function TaskCard({
                   variant="ghost"
                   size="icon"
                   className="-mr-2 size-8 shrink-0 text-muted-foreground"
-                  disabled={isReordering}
                   aria-label={`Actions for ${task.title}`}
                 >
                   <MoreHorizontal className="size-4" />
@@ -156,7 +148,6 @@ const TaskBoard = memo(function TaskBoard({
   tasksByStatus,
   visibleTasksByStatus,
   hasActiveFilters,
-  isReordering,
   onDragEnd,
   onEdit,
   onDelete,
@@ -225,7 +216,6 @@ const TaskBoard = memo(function TaskBoard({
                             key={task.id}
                             task={task}
                             index={index}
-                            isReordering={isReordering}
                             onEdit={onEdit}
                             onDelete={onDelete}
                           />

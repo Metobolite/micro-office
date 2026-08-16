@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { DASHBOARD_ROUTES } from "@/app/lib/dashboard-routes";
 import {
   Sidebar,
@@ -105,16 +105,6 @@ const navigation: Array<{
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const activeTeamId = searchParams.get("teamId");
-
-  const withTeamId = (url?: string) => {
-    if (!url || !activeTeamId || !url.startsWith("/dashboard")) {
-      return url;
-    }
-
-    return `${url}${url.includes("?") ? "&" : "?"}teamId=${activeTeamId}`;
-  };
 
   return (
     <Sidebar>
@@ -139,7 +129,7 @@ export function AppSidebar() {
                         asChild
                         isActive={pathname === item.url}
                       >
-                        <Link href={withTeamId(item.url) ?? item.url}>
+                        <Link href={item.url}>
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </Link>

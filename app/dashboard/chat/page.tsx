@@ -4,37 +4,19 @@ import {
 } from "../../lib/supabaseServer";
 import TeamChat from "../../components/chat/TeamChat";
 import { redirect } from "next/navigation";
-import {
-  getTeamContext,
-  getTeamIdFromSearchParams,
-} from "@/app/lib/team-context";
-import type { TeamSearchPageProps } from "@/app/types/team";
+import { getTeamContext } from "@/app/lib/team-context";
 import type { TeamPresenceProfile } from "@/app/types/presence";
 import type { Message } from "@/app/types/message";
 import { TeamPresenceProvider } from "@/app/components/presence/TeamPresenceProvider";
 
-export default async function DashboardPage({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function DashboardPage() {
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    user.id,
-    requestedTeamId,
-  );
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

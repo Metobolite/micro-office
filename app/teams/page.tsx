@@ -1,5 +1,6 @@
 import { ThemeToggle } from "@/app/components/theme/theme-toggle";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
+import { selectTeam } from "@/app/action/select-team";
 import {
   getMembershipTeam,
   getTeamMemberships,
@@ -121,11 +122,17 @@ export default async function TeamsPage() {
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {teamList.map((team) => (
-                <Link
-                  href={`/dashboard?teamId=${team.id}`}
+                <form
+                  action={selectTeam}
                   key={`${team.id}-${team.team_id}`}
                 >
-                  <Card className="overflow-hidden border-border shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
+                  <input type="hidden" name="teamId" value={team.id} />
+                  <Card className="relative cursor-pointer overflow-hidden border-border shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
+                    <button
+                      type="submit"
+                      className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`Open ${team.name || "untitled project"}`}
+                    />
                     <CardHeader className="bg-primary text-primary-foreground rounded-xl py-3 gap-0">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
@@ -171,7 +178,7 @@ export default async function TeamsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                </Link>
+                </form>
               ))}
             </div>
           )}

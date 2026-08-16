@@ -34,13 +34,14 @@ import {
   Clock3,
   Filter,
   ListTodo,
+  LoaderCircle,
   Plus,
   Search,
   Sparkles,
   X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import TaskBoard from "./TaskBoard";
 import {
@@ -69,6 +70,7 @@ export default function TasksPageClient({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isReordering, setIsReordering] = useState(false);
+  const isReorderingRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<
     TaskPriority | "all"
@@ -174,7 +176,7 @@ export default function TasksPageClient({
   }: DropResult) => {
     if (
       !destination ||
-      isReordering ||
+      isReorderingRef.current ||
       (source.droppableId === destination.droppableId &&
         source.index === destination.index)
     ) {
@@ -254,6 +256,7 @@ export default function TasksPageClient({
     if (!changedTasks.length) return;
 
     setTasks(nextTasks);
+    isReorderingRef.current = true;
     setIsReordering(true);
 
     try {
@@ -333,10 +336,10 @@ export default function TasksPageClient({
             : "Please refresh the page and try again.",
       });
     } finally {
+      isReorderingRef.current = false;
       setIsReordering(false);
     }
   }, [
-    isReordering,
     tasks,
     tasksByStatus,
     teamId,
@@ -510,25 +513,36 @@ export default function TasksPageClient({
               ) : null}
 
               <span
-                className="ml-auto whitespace-nowrap text-xs text-muted-foreground sm:ml-1"
+                className="ml-auto inline-flex min-w-16 items-center justify-end gap-1.5 whitespace-nowrap text-xs text-muted-foreground sm:ml-1"
                 aria-live="polite"
               >
-                {isReordering
-                  ? "Saving order..."
-                  : `${visibleTaskCount} ${visibleTaskCount === 1 ? "task" : "tasks"}`}
+                {isReordering ? (
+                  <LoaderCircle
+                    className="size-3 animate-spin"
+                    aria-label="Saving task order"
+                  />
+                ) : null}
+                {visibleTaskCount} {visibleTaskCount === 1 ? "task" : "tasks"}
               </span>
             </div>
           </section>
 
-          <TaskBoard
-            tasksByStatus={tasksByStatus}
-            visibleTasksByStatus={visibleTasksByStatus}
-            hasActiveFilters={hasActiveFilters}
-            isReordering={isReordering}
-            onDragEnd={handleDragEnd}
-            onEdit={setEditingTask}
-            onDelete={setTaskToDelete}
-          />
+          <div className="relative" aria-busy={isReordering}>
+            <TaskBoard
+              tasksByStatus={tasksByStatus}
+              visibleTasksByStatus={visibleTasksByStatus}
+              hasActiveFilters={hasActiveFilters}
+              onDragEnd={handleDragEnd}
+              onEdit={setEditingTask}
+              onDelete={setTaskToDelete}
+            />
+            {isReordering ? (
+              <div
+                className="absolute inset-0 z-20 cursor-wait"
+                aria-hidden="true"
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 

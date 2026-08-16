@@ -4,11 +4,7 @@ import {
   createClient,
   getCurrentIdentity,
 } from "../../lib/supabaseServer";
-import {
-  getTeamContext,
-  getTeamIdFromSearchParams,
-} from "@/app/lib/team-context";
-import type { TeamSearchPageProps } from "@/app/types/team";
+import { getTeamContext } from "@/app/lib/team-context";
 import {
   CALENDAR_UPCOMING_LIMIT,
   getCalendarGridRange,
@@ -19,28 +15,14 @@ import {
 const EVENT_COLUMNS =
   "id, title, description, type, date, time, duration, attendees";
 
-export default async function CalendarPage({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function CalendarPage() {
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    user.id,
-    requestedTeamId,
-  );
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

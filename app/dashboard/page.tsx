@@ -5,11 +5,7 @@ import StatsCards from "@/app/components/dashboard/stats-cards";
 import { TeamMembers } from "@/app/components/dashboard/team-members";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
 import { getCurrentIdentity } from "@/app/lib/supabaseServer";
-import {
-  getTeamContext,
-  getTeamIdFromSearchParams,
-} from "../lib/team-context";
-import type { TeamSearchPageProps } from "@/app/types/team";
+import { getTeamContext } from "../lib/team-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { redirect } from "next/navigation";
@@ -50,27 +46,14 @@ function DashboardCardFallback() {
   );
 }
 
-export default async function DashboardPage({
-  searchParams,
-}: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function DashboardPage() {
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-  const { activeTeamId, isRequestedTeamIdValid } = await getTeamContext(
-    user.id,
-    requestedTeamId,
-  );
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     return (

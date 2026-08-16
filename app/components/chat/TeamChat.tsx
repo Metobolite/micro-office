@@ -124,7 +124,7 @@ export default function TeamChat({
     getMessageWindow(initialMessages),
   );
   const [newMessage, setNewMessage] = useState("");
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const hasLoadedMessagesRef = useRef(false);
   const hasSyncedInitialMessagesRef = useRef(false);
   const { statusByUserId, connection, errorMessage, isSynced } =
@@ -150,7 +150,11 @@ export default function TeamChat({
     }, [members, statusByUserId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({
+    const viewport = messagesViewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollTo({
+      top: viewport.scrollHeight,
       behavior: hasLoadedMessagesRef.current ? "smooth" : "auto",
     });
     if (messages.length > 0) hasLoadedMessagesRef.current = true;
@@ -266,7 +270,7 @@ export default function TeamChat({
   }, [newMessage, teamId, userId, userName]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-[calc(100dvh-4rem)] min-h-0 max-h-[calc(100dvh-4rem)] flex-col overflow-hidden">
       <DashboardHeaderActions>
         <div
           className="hidden items-center gap-3 sm:flex"
@@ -333,14 +337,17 @@ export default function TeamChat({
         </div>
       </DashboardHeaderActions>
 
-      <div className="flex-1 flex overflow-hidden">
-        <Card className="flex-1 m-6 flex flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <Card className="m-6 flex min-h-0 flex-1 flex-col overflow-hidden">
           <CardHeader>
             <CardTitle>General</CardTitle>
           </CardHeader>
 
-          <CardContent className="flex flex-col flex-1 overflow-hidden px-6 pb-1">
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2 hide-scrollbar">
+          <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-1">
+            <div
+              ref={messagesViewportRef}
+              className="chat-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-2"
+            >
               {messages.map((message) => (
                 <ChatMessage
                   key={message.id}
@@ -348,7 +355,6 @@ export default function TeamChat({
                   userId={userId}
                 />
               ))}
-              <div ref={bottomRef} />
             </div>
 
             <div className="flex items-center space-x-2 mt-4 pt-4 border-t">

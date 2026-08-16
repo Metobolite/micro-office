@@ -7,7 +7,6 @@ import type {
   TeamPresenceStatus,
 } from "@/app/types/presence";
 import type { RealtimeChannel, RealtimePresenceState } from "@supabase/supabase-js";
-import { useSearchParams } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -77,12 +76,10 @@ export function TeamPresenceProvider({
   teamIds,
   defaultTeamId,
 }: TeamPresenceProviderProps) {
-  const searchParams = useSearchParams();
-  const requestedTeamId = searchParams.get("teamId");
   const activeTeamId =
-    requestedTeamId && teamIds.includes(requestedTeamId)
-      ? requestedTeamId
-      : defaultTeamId;
+    defaultTeamId && teamIds.includes(defaultTeamId)
+      ? defaultTeamId
+      : teamIds[0] ?? null;
   const channelRef = useRef<RealtimeChannel | null>(null);
   const isSubscribedRef = useRef(false);
   const desiredStatusRef = useRef<Exclude<TeamPresenceStatus, "offline">>(

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getCurrentIdentity } from "@/app/lib/supabaseServer";
 import {
   getMembershipTeam,
-  getTeamMemberships,
+  getTeamContext,
 } from "@/app/lib/team-context";
 import type { LayoutProps } from "@/app/types/common";
 import type { Metadata } from "next";
@@ -26,8 +26,8 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
-  const { memberships, error: teamError } = await getTeamMemberships(user.id);
-  const hasTeam = !teamError && memberships.length > 0;
+  const { memberships, activeTeamId } = await getTeamContext(user.id);
+  const hasTeam = memberships.length > 0;
   const firstMembership = memberships[0];
   const metadata = user.user_metadata ?? {};
   const metadataName =
@@ -68,7 +68,11 @@ export default async function DashboardLayout({
         {hasTeam && <AppSidebar />}
         <main className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden bg-accent">
           {hasTeam ? (
-            <DashboardHeader user={headerUser} teams={headerTeams} />
+            <DashboardHeader
+              user={headerUser}
+              teams={headerTeams}
+              activeTeamId={activeTeamId}
+            />
           ) : null}
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {children}

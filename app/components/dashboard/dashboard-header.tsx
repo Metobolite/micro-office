@@ -8,18 +8,17 @@ import type { DashboardHeaderProps } from "@/app/types/dashboard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export function DashboardHeader({
   user,
   teams,
+  activeTeamId,
 }: DashboardHeaderProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const route = getDashboardRoute(pathname);
-  const requestedTeamId = searchParams.get("teamId");
   const activeTeam =
-    teams.find((team) => team.id === requestedTeamId) ?? teams[0] ?? null;
+    teams.find((team) => team.id === activeTeamId) ?? teams[0] ?? null;
   const subtitle = route.teamSubtitle
     ? activeTeam?.name || route.subtitle
     : route.subtitle;

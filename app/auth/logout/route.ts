@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
+import { ACTIVE_TEAM_COOKIE } from "@/app/lib/team-cookie";
 import {
   createClient,
   getCurrentClaims,
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
   });
   response.headers.set("Location", "/auth/login");
   response.headers.set("Cache-Control", "no-store");
+  response.cookies.delete(ACTIVE_TEAM_COOKIE);
 
   return response;
 }

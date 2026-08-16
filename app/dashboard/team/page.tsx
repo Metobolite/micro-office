@@ -6,32 +6,18 @@ import {
   createClient,
   getCurrentIdentity,
 } from "@/app/lib/supabaseServer";
-import {
-  getTeamContext,
-  getTeamIdFromSearchParams,
-} from "@/app/lib/team-context";
-import type { TeamSearchPageProps } from "@/app/types/team";
+import { getTeamContext } from "@/app/lib/team-context";
 import type { TeamMemberPresenceCard } from "@/app/types/presence";
 import { redirect } from "next/navigation";
 
-export default async function TeamPage({ searchParams }: TeamSearchPageProps) {
-  const [{ user, error }, resolvedSearchParams] = await Promise.all([
-    getCurrentIdentity(),
-    searchParams,
-  ]);
+export default async function TeamPage() {
+  const { user, error } = await getCurrentIdentity();
 
   if (!user || error) {
     redirect("/auth/login");
   }
 
-  const requestedTeamId = getTeamIdFromSearchParams(resolvedSearchParams);
-
-  const { activeTeamId, isRequestedTeamIdValid, memberships } =
-    await getTeamContext(user.id, requestedTeamId);
-
-  if (requestedTeamId && !isRequestedTeamIdValid) {
-    redirect("/teams");
-  }
+  const { activeTeamId, memberships } = await getTeamContext(user.id);
 
   if (!activeTeamId) {
     redirect("/teams");

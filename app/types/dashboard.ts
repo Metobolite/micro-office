@@ -11,4 +11,5 @@ export type DashboardTeam = {
 export type DashboardHeaderProps = {
   user: DashboardUser;
   teams: DashboardTeam[];
+  activeTeamId: string | null;
 };
