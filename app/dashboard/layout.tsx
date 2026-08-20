@@ -29,6 +29,9 @@ export default async function DashboardLayout({
   const { memberships, activeTeamId } = await getTeamContext(user.id);
   const hasTeam = memberships.length > 0;
   const firstMembership = memberships[0];
+  const activeMembership = memberships.find(
+    (membership) => membership.team_id === activeTeamId,
+  );
   const metadata = user.user_metadata ?? {};
   const metadataName =
     typeof metadata.full_name === "string"
@@ -45,10 +48,15 @@ export default async function DashboardLayout({
   const headerUser = {
     name:
       metadataName ||
+      activeMembership?.name ||
       firstMembership?.name ||
       user.email?.split("@")[0] ||
       "User",
-    avatarUrl: metadataAvatar || firstMembership?.avatar_url || null,
+    avatarUrl:
+      metadataAvatar ||
+      activeMembership?.avatar_url ||
+      firstMembership?.avatar_url ||
+      null,
   };
   const headerTeams = Array.from(
     new Map(

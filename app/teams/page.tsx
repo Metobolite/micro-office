@@ -48,8 +48,12 @@ export default async function TeamsPage() {
       if (!team) return null;
 
       return {
-        ...team,
-        ...membership,
+        id: team.id,
+        name: team.name,
+        team_id: membership.team_id,
+        role: membership.role,
+        status: membership.status,
+        joined_at: membership.joined_at,
         joinedLabel: formatJoinedAt(membership.joined_at),
         statusLabel: membership.status || "active",
       };
@@ -140,7 +144,7 @@ export default async function TeamsPage() {
                             variant="secondary"
                             className="w-fit uppercase"
                           >
-                            {team.role || "member"}
+                            Team
                           </Badge>
                           <CardTitle className="text-2xl leading-tight uppercase">
                             {team.name || "Untitled project"}
