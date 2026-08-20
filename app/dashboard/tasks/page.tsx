@@ -1,49 +1,43 @@
-import { Task } from "../../types/task";
+import { getTeamContext } from "@/app/lib/team-context";
+import { Task } from "@/app/types/task";
+import { redirect } from "next/navigation";
+import TasksPageClient from "../../components/tasks/TasksPageClient";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "../../lib/supabaseServer";
 
-const fakeTasks: Task[] = [
-  {
-    id: "1",
-    title: "Ana Sayfa Tasarımı",
-    description: "Landing page UI",
-    status: "todo",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "API Bağlantısı",
-    description: "Veritabanı bağlantısı kur",
-    status: "doing",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    title: "Kayıt Formu",
-    description: "NextAuth ile form",
-    status: "done",
-    createdAt: new Date().toISOString(),
-  },
-];
+export default async function TasksPage() {
+  const { user, error } = await getCurrentIdentity();
 
-export default function TaskPage() {
-  const statusGroups = ["todo", "doing", "done"] as const;
+  if (!user || error) {
+    redirect("/auth/login");
+  }
+
+  const { activeTeamId } = await getTeamContext(user.id);
+
+  if (!activeTeamId) {
+    redirect("/teams");
+  }
+
+  const supabase = await createClient();
+  const { data: tasks, error: tasksError } = await supabase
+    .from("tasks")
+    .select("id, title, description, status, priority, sort_order, due_date")
+    .eq("user_id", user.id)
+    .eq("team_id", activeTeamId)
+    .order("status", { ascending: true })
+    .order("sort_order", { ascending: true });
 
   return (
-    <div className="flex gap-6 p-8">
-      {statusGroups.map((status) => (
-        <div key={status} className="flex-1 bg-gray-100 p-4 rounded shadow">
-          <h2 className="text-xl font-semibold capitalize mb-4">{status}</h2>
-          <div className="flex flex-col gap-2">
-            {fakeTasks
-              .filter((task) => task.status === status)
-              .map((task) => (
-                <div key={task.id} className="bg-white p-3 rounded shadow">
-                  <h3 className="font-medium">{task.title}</h3>
-                  <p className="text-sm text-gray-600">{task.description}</p>
-                </div>
-              ))}
-          </div>
-        </div>
-      ))}
+    <div className="flex h-full min-h-0 flex-col">
+      <TasksPageClient
+        key={activeTeamId}
+        userId={user.id}
+        teamId={activeTeamId}
+        initialTasks={(tasks as Task[]) ?? []}
+        initialLoadFailed={Boolean(tasksError)}
+      />
     </div>
   );
 }

@@ -1,0 +1,54 @@
+import { FilesPage } from "@/app/components/files/FilesPage";
+import { getTeamContext } from "@/app/lib/team-context";
+import {
+  FILE_PAGE_SIZE,
+  getFilePageCursor,
+  mapFileRows,
+} from "@/app/lib/file-utils";
+import {
+  createClient,
+  getCurrentIdentity,
+} from "@/app/lib/supabaseServer";
+import type { FileRow } from "@/app/types/file";
+import { redirect } from "next/navigation";
+
+export default async function Page() {
+  const { user, error } = await getCurrentIdentity();
+
+  if (!user || error) {
+    redirect("/auth/login");
+  }
+
+  const { activeTeamId } = await getTeamContext(user.id);
+
+  if (!activeTeamId) {
+    redirect("/teams");
+  }
+
+  const supabase = await createClient();
+  const { data: fileData, error: filesError } = await supabase
+    .from("files")
+    .select("id, name, type, size, uploaded_at, path")
+    .eq("user_id", user.id)
+    .eq("team_id", activeTeamId)
+    .order("uploaded_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(FILE_PAGE_SIZE + 1);
+  const allFileRows = (fileData ?? []) as FileRow[];
+  const fileRows = allFileRows.slice(0, FILE_PAGE_SIZE);
+  const initialNextCursor = getFilePageCursor(fileRows.at(-1));
+
+  return (
+    <FilesPage
+      key={activeTeamId}
+      userId={user.id}
+      teamId={activeTeamId}
+      initialFiles={mapFileRows(fileRows)}
+      initialHasMore={
+        allFileRows.length > FILE_PAGE_SIZE && initialNextCursor !== null
+      }
+      initialNextCursor={initialNextCursor}
+      initialLoadFailed={Boolean(filesError)}
+    />
+  );
+}
