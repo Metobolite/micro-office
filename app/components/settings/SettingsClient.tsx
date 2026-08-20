@@ -4,10 +4,12 @@ import {
   updateProfileSettings,
   updateWorkspaceSettings,
 } from "@/app/action/update-settings";
+import { ProfileAvatarImage } from "@/app/components/profile/ProfileAvatarImage";
 import { supabase } from "@/app/lib/supabase";
 import { useTheme } from "@/app/components/theme/theme-provider";
+import { getOwnedAvatarStoragePath } from "@/app/lib/profile-avatar";
 import type { SettingsClientProps } from "@/app/types/settings";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,24 +52,32 @@ const ALLOWED_AVATAR_MIME_TYPES = new Set([
   "image/webp",
 ]);
 
+function getAvatarFileExtension(mimeType: string) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+
+  return "jpg";
+}
+
 export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [profileForm, setProfileForm] = useState({
     fullName: profile.fullName,
     phone: profile.phone,
-    avatarUrl: profile.avatarUrl,
+    customAvatarUrl: profile.customAvatarUrl,
   });
   const [savedProfile, setSavedProfile] = useState({
     fullName: profile.fullName,
     phone: profile.phone,
-    avatarUrl: profile.avatarUrl,
+    customAvatarUrl: profile.customAvatarUrl,
   });
   const [workspaceName, setWorkspaceName] = useState(workspace.name);
   const [savedWorkspaceName, setSavedWorkspaceName] = useState(workspace.name);
   const [isProfilePending, startProfileTransition] = useTransition();
   const [isWorkspacePending, startWorkspaceTransition] = useTransition();
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const profileSaveInFlightRef = useRef(false);
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
     null,
   );
@@ -89,26 +99,31 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   const profileIsDirty =
     profileForm.fullName !== savedProfile.fullName ||
     profileForm.phone !== savedProfile.phone ||
-    profileForm.avatarUrl !== savedProfile.avatarUrl ||
+    profileForm.customAvatarUrl !== savedProfile.customAvatarUrl ||
     selectedAvatarFile !== null;
   const workspaceIsDirty = workspaceName !== savedWorkspaceName;
 
   const handleProfileSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (profileSaveInFlightRef.current) return;
 
     const normalizedProfile = {
       fullName: profileForm.fullName.trim().replace(/\s+/g, " "),
       phone: profileForm.phone.trim(),
-      avatarUrl: profileForm.avatarUrl.trim(),
+      customAvatarUrl: profileForm.customAvatarUrl.trim(),
     };
+    const avatarFileToUpload = selectedAvatarFile;
+    profileSaveInFlightRef.current = true;
 
     startProfileTransition(async () => {
       let uploadedAvatarPath: string | null = null;
+      let profileUpdateStarted = false;
 
       try {
-        let nextAvatarUrl = normalizedProfile.avatarUrl;
+        let nextCustomAvatarUrl = normalizedProfile.customAvatarUrl;
+        let authenticatedUserId: string | null = null;
 
-        if (selectedAvatarFile) {
+        if (avatarFileToUpload) {
           const { data: authData, error: authError } =
             await supabase.auth.getUser();
 
@@ -116,17 +131,18 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
             toast.error("You must sign in again to upload a profile photo.");
             return;
           }
+          authenticatedUserId = authData.user.id;
 
-          const safeFileName = selectedAvatarFile.name
-            .replace(/[^a-zA-Z0-9._-]/g, "-")
-            .toLowerCase();
-          const filePath = `${authData.user.id}/avatars/${crypto.randomUUID()}-${safeFileName}`;
+          const fileExtension = getAvatarFileExtension(
+            avatarFileToUpload.type.toLowerCase(),
+          );
+          const filePath = `${authData.user.id}/avatars/${crypto.randomUUID()}.${fileExtension}`;
 
           const { error: uploadError } = await supabase.storage
             .from("avatars")
-            .upload(filePath, selectedAvatarFile, {
+            .upload(filePath, avatarFileToUpload, {
               upsert: false,
-              contentType: selectedAvatarFile.type,
+              contentType: avatarFileToUpload.type,
             });
 
           if (uploadError) {
@@ -145,12 +161,25 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
             return;
           }
 
-          nextAvatarUrl = publicUrlData.publicUrl;
+          nextCustomAvatarUrl = publicUrlData.publicUrl;
         }
 
+        const customAvatarChanged =
+          nextCustomAvatarUrl !== savedProfile.customAvatarUrl;
+
+        if (
+          !authenticatedUserId &&
+          customAvatarChanged &&
+          savedProfile.customAvatarUrl
+        ) {
+          const { data: authData } = await supabase.auth.getUser();
+          authenticatedUserId = authData.user?.id || null;
+        }
+
+        profileUpdateStarted = true;
         const result = await updateProfileSettings({
           ...normalizedProfile,
-          avatarUrl: nextAvatarUrl,
+          customAvatarUrl: nextCustomAvatarUrl,
         });
 
         if (!result.success) {
@@ -169,7 +198,7 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
 
         const nextProfile = {
           ...normalizedProfile,
-          avatarUrl: nextAvatarUrl,
+          customAvatarUrl: nextCustomAvatarUrl,
         };
         setProfileForm(nextProfile);
         setSavedProfile(nextProfile);
@@ -179,13 +208,36 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
           return null;
         });
         if (avatarFileInputRef.current) avatarFileInputRef.current.value = "";
+
+        if (customAvatarChanged && authenticatedUserId && !result.warning) {
+          const previousAvatarPath = getOwnedAvatarStoragePath(
+            savedProfile.customAvatarUrl,
+            authenticatedUserId,
+          );
+
+          if (previousAvatarPath && previousAvatarPath !== uploadedAvatarPath) {
+            const { error: cleanupError } = await supabase.storage
+              .from("avatars")
+              .remove([previousAvatarPath]);
+
+            if (cleanupError) {
+              console.error(
+                "Previous profile photo cleanup error:",
+                cleanupError,
+              );
+            }
+          }
+        }
+
         router.refresh();
       } catch (error) {
-        if (uploadedAvatarPath) {
+        if (uploadedAvatarPath && !profileUpdateStarted) {
           await supabase.storage.from("avatars").remove([uploadedAvatarPath]);
         }
         console.error("Profile settings request error:", error);
         toast.error("Profile could not be saved. Please try again.");
+      } finally {
+        profileSaveInFlightRef.current = false;
       }
     });
   };
@@ -219,6 +271,8 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
   };
 
   const handleAvatarFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    if (profileSaveInFlightRef.current) return;
+
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
@@ -256,10 +310,11 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
         <CardContent className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <Avatar className="-mt-12 size-24 border-4 border-card bg-card shadow-sm">
-              <AvatarImage
-                src={
-                  selectedAvatarPreviewUrl || profileForm.avatarUrl || undefined
+              <ProfileAvatarImage
+                customSrc={
+                  selectedAvatarPreviewUrl || profileForm.customAvatarUrl
                 }
+                providerSrc={profile.providerAvatarUrl}
                 alt={profileForm.fullName}
               />
               <AvatarFallback className="text-xl font-semibold">
@@ -305,6 +360,7 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
                 <Input
                   id="full-name"
                   autoComplete="name"
+                  disabled={isProfilePending}
                   maxLength={80}
                   minLength={2}
                   required
@@ -341,6 +397,7 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
                   id="phone"
                   type="tel"
                   autoComplete="tel"
+                  disabled={isProfilePending}
                   maxLength={30}
                   placeholder="+49 123 456 789"
                   value={profileForm.phone}
@@ -355,25 +412,54 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
 
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="avatar-photo">Profile photo</Label>
-                <Button
-                  id="avatar-photo"
-                  type="button"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={() => avatarFileInputRef.current?.click()}
-                >
-                  Choose photo
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    id="avatar-photo"
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    disabled={isProfilePending}
+                    onClick={() => avatarFileInputRef.current?.click()}
+                  >
+                    Choose photo
+                  </Button>
+                  {selectedAvatarFile || profileForm.customAvatarUrl ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full sm:w-auto"
+                      disabled={isProfilePending}
+                      onClick={() => {
+                        setProfileForm((current) => ({
+                          ...current,
+                          customAvatarUrl: "",
+                        }));
+                        setSelectedAvatarFile(null);
+                        setSelectedAvatarPreviewUrl((currentUrl) => {
+                          if (currentUrl) URL.revokeObjectURL(currentUrl);
+                          return null;
+                        });
+                        if (avatarFileInputRef.current) {
+                          avatarFileInputRef.current.value = "";
+                        }
+                      }}
+                    >
+                      Remove custom photo
+                    </Button>
+                  ) : null}
+                </div>
                 <Input
                   ref={avatarFileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   className="hidden"
+                  disabled={isProfilePending}
                   onChange={handleAvatarFileSelect}
                 />
                 <p className="text-xs leading-5 text-muted-foreground">
                   Choose a JPEG, PNG, or WebP image up to 5 MB. It will be
-                  uploaded when you save profile.
+                  uploaded when you save profile. Removing it falls back to
+                  your Google account photo, then your initials.
                 </p>
               </div>
             </CardContent>
@@ -387,7 +473,7 @@ export function SettingsClient({ profile, workspace }: SettingsClientProps) {
                   setProfileForm({
                     fullName: savedProfile.fullName,
                     phone: savedProfile.phone,
-                    avatarUrl: savedProfile.avatarUrl,
+                    customAvatarUrl: savedProfile.customAvatarUrl,
                   });
                   setSelectedAvatarFile(null);
                   setSelectedAvatarPreviewUrl((currentUrl) => {

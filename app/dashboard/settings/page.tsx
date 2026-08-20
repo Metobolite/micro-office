@@ -1,4 +1,5 @@
 import { SettingsClient } from "@/app/components/settings/SettingsClient";
+import { getProfileAvatarSources } from "@/app/lib/profile-avatar";
 import { getCurrentUser } from "@/app/lib/supabaseServer";
 import {
   getMembershipTeam,
@@ -43,20 +44,24 @@ export default async function SettingsPage() {
     "User";
   const role = activeMembership?.role || "member";
   const activeTeam = getMembershipTeam(activeMembership);
+  const avatarSources = getProfileAvatarSources(metadata, user.id);
 
   return (
     <div className="h-full overflow-y-auto">
       <SettingsClient
-        key={activeTeamId}
+        key={[
+          activeTeamId,
+          fullName,
+          metadata.phone || "",
+          avatarSources.customAvatarUrl || "",
+          avatarSources.providerAvatarUrl || "",
+        ].join(":")}
         profile={{
           fullName,
           email: user.email || activeMembership.email || "",
           phone: metadata.phone || activeMembership.phone || "",
-          avatarUrl:
-            metadata.avatar_url ||
-            activeMembership.avatar_url ||
-            metadata.picture ||
-            "",
+          customAvatarUrl: avatarSources.customAvatarUrl || "",
+          providerAvatarUrl: avatarSources.providerAvatarUrl || "",
           createdAt: formatAccountDate(user.created_at),
         }}
         workspace={{

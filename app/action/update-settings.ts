@@ -1,5 +1,6 @@
 "use server";
 
+import { getOwnedAvatarStoragePath } from "@/app/lib/profile-avatar";
 import {
   createClient,
   getCurrentIdentity,
@@ -21,7 +22,7 @@ function isProfileSettingsInput(input: unknown): input is ProfileSettingsInput {
   return (
     typeof value.fullName === "string" &&
     typeof value.phone === "string" &&
-    typeof value.avatarUrl === "string"
+    typeof value.customAvatarUrl === "string"
   );
 }
 
@@ -56,7 +57,7 @@ export async function updateProfileSettings(
 
   const fullName = input.fullName.trim().replace(/\s+/g, " ");
   const phone = input.phone.trim();
-  const avatarUrl = input.avatarUrl.trim();
+  const customAvatarUrl = input.customAvatarUrl.trim();
 
   if (fullName.length < 2 || fullName.length > 80) {
     return {
@@ -72,7 +73,7 @@ export async function updateProfileSettings(
     };
   }
 
-  if (avatarUrl.length > 500 || !isValidAvatarUrl(avatarUrl)) {
+  if (customAvatarUrl.length > 500 || !isValidAvatarUrl(customAvatarUrl)) {
     return {
       success: false,
       message: "Enter a valid http or https image URL.",
@@ -86,12 +87,32 @@ export async function updateProfileSettings(
     return { success: false, message: "You must sign in again to continue." };
   }
 
+  if (
+    customAvatarUrl &&
+    !getOwnedAvatarStoragePath(customAvatarUrl, user.id)
+  ) {
+    return {
+      success: false,
+      message: "Choose a profile photo uploaded from your account.",
+    };
+  }
+
+  const legacyAvatarUrl =
+    typeof user.user_metadata?.avatar_url === "string"
+      ? user.user_metadata.avatar_url.trim()
+      : "";
+  const legacyAvatarIsCustom = Boolean(
+    getOwnedAvatarStoragePath(legacyAvatarUrl, user.id),
+  );
+
   const { error: authError } = await supabase.auth.updateUser({
     data: {
       full_name: fullName,
       name: fullName,
       phone,
-      avatar_url: avatarUrl,
+      profile_avatar_url: customAvatarUrl || null,
+      profile_avatar_migrated: true,
+      ...(legacyAvatarIsCustom ? { avatar_url: null } : {}),
     },
   });
 
@@ -103,21 +124,7 @@ export async function updateProfileSettings(
     };
   }
 
-  const providerAvatarUrl =
-    typeof user.user_metadata?.picture === "string" &&
-    isValidAvatarUrl(user.user_metadata.picture.trim())
-      ? user.user_metadata.picture.trim()
-      : "";
-  const teamAvatarUrl = avatarUrl || providerAvatarUrl;
-
-  const { error: rpcError } = await supabase.rpc(
-    "update_own_profile_settings",
-    {
-      profile_avatar_url: teamAvatarUrl || null,
-      profile_name: fullName,
-      profile_phone: phone || null,
-    },
-  );
+  const { error: rpcError } = await supabase.rpc("sync_own_profile_settings");
 
   if (rpcError) {
     console.error("Profile membership sync error:", rpcError);

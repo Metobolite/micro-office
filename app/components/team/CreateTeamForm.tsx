@@ -13,6 +13,7 @@ export default function CreateTeamForm({
   userId,
   userName,
   userEmail,
+  userAvatarUrl,
 }: CreateTeamFormProps) {
   const router = useRouter();
   const [teamName, setTeamName] = useState("");
@@ -48,6 +49,7 @@ export default function CreateTeamForm({
           role: "owner",
           name: userName,
           email: userEmail,
+          avatar_url: userAvatarUrl,
           joined_at: new Date().toISOString(),
         });
 

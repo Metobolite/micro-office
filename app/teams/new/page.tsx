@@ -1,10 +1,11 @@
 import { ThemeToggle } from "@/app/components/theme/theme-toggle";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
-import { getCurrentIdentity } from "@/app/lib/supabaseServer";
+import { getResolvedProfileAvatarUrl } from "@/app/lib/profile-avatar";
+import { getCurrentUser } from "@/app/lib/supabaseServer";
 import { redirect } from "next/navigation";
 
 export default async function NewTeamPage() {
-  const { user, error } = await getCurrentIdentity();
+  const { user, error } = await getCurrentUser();
 
   if (!user || error) {
     redirect("/auth/login");
@@ -22,6 +23,10 @@ export default async function NewTeamPage() {
             ""
           }
           userEmail={user.email || ""}
+          userAvatarUrl={getResolvedProfileAvatarUrl(
+            user.user_metadata,
+            user.id,
+          )}
         />
       </div>
     </div>

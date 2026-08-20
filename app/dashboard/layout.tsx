@@ -1,8 +1,9 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/app/components/sidebar";
 import { DashboardHeader } from "@/app/components/dashboard/dashboard-header";
+import { getProfileAvatarSources } from "@/app/lib/profile-avatar";
 import { redirect } from "next/navigation";
-import { getCurrentIdentity } from "@/app/lib/supabaseServer";
+import { getCurrentUser } from "@/app/lib/supabaseServer";
 import {
   getMembershipTeam,
   getTeamContext,
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 export default async function DashboardLayout({
   children,
 }: LayoutProps) {
-  const { user, error } = await getCurrentIdentity();
+  const { user, error } = await getCurrentUser();
 
   if (!user || error) {
     redirect("/auth/login");
@@ -39,12 +40,7 @@ export default async function DashboardLayout({
       : typeof metadata.name === "string"
         ? metadata.name.trim()
         : "";
-  const metadataAvatar =
-    typeof metadata.avatar_url === "string"
-      ? metadata.avatar_url
-      : typeof metadata.picture === "string"
-        ? metadata.picture
-        : "";
+  const avatarSources = getProfileAvatarSources(metadata, user.id);
   const headerUser = {
     name:
       metadataName ||
@@ -52,11 +48,8 @@ export default async function DashboardLayout({
       firstMembership?.name ||
       user.email?.split("@")[0] ||
       "User",
-    avatarUrl:
-      metadataAvatar ||
-      activeMembership?.avatar_url ||
-      firstMembership?.avatar_url ||
-      null,
+    customAvatarUrl: avatarSources.customAvatarUrl,
+    providerAvatarUrl: avatarSources.providerAvatarUrl,
   };
   const headerTeams = Array.from(
     new Map(

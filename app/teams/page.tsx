@@ -5,7 +5,8 @@ import {
   getMembershipTeam,
   getTeamMemberships,
 } from "@/app/lib/team-context";
-import { getCurrentIdentity } from "@/app/lib/supabaseServer";
+import { getResolvedProfileAvatarUrl } from "@/app/lib/profile-avatar";
+import { getCurrentUser } from "@/app/lib/supabaseServer";
 import type { TeamListItem } from "@/app/types/team";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +34,7 @@ function getStatusVariant(status: string | null) {
 }
 
 export default async function TeamsPage() {
-  const { user, error } = await getCurrentIdentity();
+  const { user, error } = await getCurrentUser();
 
   if (!user || error) {
     redirect("/auth/login");
@@ -121,6 +122,10 @@ export default async function TeamsPage() {
                   ""
                 }
                 userEmail={user.email || ""}
+                userAvatarUrl={getResolvedProfileAvatarUrl(
+                  user.user_metadata,
+                  user.id,
+                )}
               />
             </div>
           ) : (

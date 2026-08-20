@@ -63,6 +63,14 @@ export async function acceptInvitation(token: unknown) {
     redirect(`/invite/${token}?error=accept`);
   }
 
+  const { error: profileSyncError } = await supabase.rpc(
+    "sync_own_profile_settings",
+  );
+
+  if (profileSyncError) {
+    console.error("Accepted membership profile sync error:", profileSyncError);
+  }
+
   await setStoredActiveTeamId(String(acceptedTeamId));
   redirect("/dashboard");
 }

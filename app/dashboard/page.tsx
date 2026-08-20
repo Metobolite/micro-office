@@ -4,7 +4,8 @@ import { RecentTasks } from "@/app/components/dashboard/recent-tasks";
 import StatsCards from "@/app/components/dashboard/stats-cards";
 import { TeamMembers } from "@/app/components/dashboard/team-members";
 import CreateTeamForm from "@/app/components/team/CreateTeamForm";
-import { getCurrentIdentity } from "@/app/lib/supabaseServer";
+import { getResolvedProfileAvatarUrl } from "@/app/lib/profile-avatar";
+import { getCurrentUser } from "@/app/lib/supabaseServer";
 import { getTeamContext } from "../lib/team-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,7 +48,7 @@ function DashboardCardFallback() {
 }
 
 export default async function DashboardPage() {
-  const { user, error } = await getCurrentIdentity();
+  const { user, error } = await getCurrentUser();
 
   if (!user || error) {
     redirect("/auth/login");
@@ -65,6 +66,10 @@ export default async function DashboardPage() {
           ""
         }
         userEmail={user.email || ""}
+        userAvatarUrl={getResolvedProfileAvatarUrl(
+          user.user_metadata,
+          user.id,
+        )}
       />
     );
   }

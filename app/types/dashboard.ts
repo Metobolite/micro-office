@@ -1,6 +1,7 @@
 export type DashboardUser = {
   name: string;
-  avatarUrl: string | null;
+  customAvatarUrl: string | null;
+  providerAvatarUrl: string | null;
 };
 
 export type DashboardTeam = {

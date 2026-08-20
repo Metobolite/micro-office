@@ -4,8 +4,9 @@ import {
   DASHBOARD_HEADER_ACTIONS_ID,
   getDashboardRoute,
 } from "@/app/lib/dashboard-routes";
+import { ProfileAvatarImage } from "@/app/components/profile/ProfileAvatarImage";
 import type { DashboardHeaderProps } from "@/app/types/dashboard";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { usePathname } from "next/navigation";
@@ -52,8 +53,9 @@ export function DashboardHeader({
             className="size-9 border bg-card shadow-xs"
             title={user.name}
           >
-            <AvatarImage
-              src={user.avatarUrl || undefined}
+            <ProfileAvatarImage
+              customSrc={user.customAvatarUrl}
+              providerSrc={user.providerAvatarUrl}
               alt={`${user.name} profile image`}
             />
             <AvatarFallback>{initials}</AvatarFallback>

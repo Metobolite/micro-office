@@ -48,4 +48,5 @@ export type CreateTeamFormProps = {
   userId: string;
   userName: string;
   userEmail: string;
+  userAvatarUrl: string | null;
 };

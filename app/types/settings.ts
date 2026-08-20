@@ -2,7 +2,8 @@ export type ProfileSettings = {
   fullName: string;
   email: string;
   phone: string;
-  avatarUrl: string;
+  customAvatarUrl: string;
+  providerAvatarUrl: string;
   createdAt: string;
 };
 
@@ -20,7 +21,7 @@ export type SettingsClientProps = {
 
 export type ProfileSettingsInput = Pick<
   ProfileSettings,
-  "fullName" | "phone" | "avatarUrl"
+  "fullName" | "phone" | "customAvatarUrl"
 >;
 
 export type WorkspaceSettingsInput = {
