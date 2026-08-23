@@ -89,7 +89,9 @@ export default async function Home() {
                   ) : (
                     <Sparkles className="size-3.5" aria-hidden="true" />
                   )}
-                  <span>{loggedIn ? "Session active" : "Your workspace awaits"}</span>
+                  <span>
+                    {loggedIn ? "Session active" : "Your workspace awaits"}
+                  </span>
                 </div>
 
                 <p className="text-sm font-semibold uppercase tracking-[0.35em] text-muted-foreground">
