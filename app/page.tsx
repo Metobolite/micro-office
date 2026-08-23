@@ -112,7 +112,7 @@ export default async function Home() {
               <Button
                 asChild
                 size="lg"
-                className="h-12 w-full justify-between rounded-xl px-5 text-primary-foreground! shadow-sm transition-all hover:-translate-y-0.5 hover:text-primary-foreground! hover:shadow-md"
+                className="h-12 w-full justify-between rounded-xl px-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
                 <Link href={destination}>
                   <span>{loggedIn ? "Go to Teams" : "Sign in to continue"}</span>
