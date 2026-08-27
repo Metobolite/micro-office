@@ -50,6 +50,10 @@ export default async function DashboardLayout({
       "User",
     customAvatarUrl: avatarSources.customAvatarUrl,
     providerAvatarUrl: avatarSources.providerAvatarUrl,
+    membershipAvatarUrls: [
+      activeMembership?.avatar_url,
+      firstMembership?.avatar_url,
+    ].filter((avatarUrl): avatarUrl is string => Boolean(avatarUrl)),
   };
   const headerTeams = Array.from(
     new Map(

@@ -56,6 +56,7 @@ export function DashboardHeader({
             <ProfileAvatarImage
               customSrc={user.customAvatarUrl}
               providerSrc={user.providerAvatarUrl}
+              fallbackSrcs={user.membershipAvatarUrls}
               alt={`${user.name} profile image`}
             />
             <AvatarFallback>{initials}</AvatarFallback>

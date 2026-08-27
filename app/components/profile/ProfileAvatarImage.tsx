@@ -2,7 +2,9 @@
 
 import { AvatarImage } from "@/components/ui/avatar";
 import type { ComponentProps } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+const EMPTY_FALLBACK_SRCS: ReadonlyArray<string | null | undefined> = [];
 
 type ProfileAvatarImageProps = Omit<
   ComponentProps<typeof AvatarImage>,
@@ -10,24 +12,28 @@ type ProfileAvatarImageProps = Omit<
 > & {
   customSrc?: string | null;
   providerSrc?: string | null;
+  fallbackSrcs?: ReadonlyArray<string | null | undefined>;
 };
 
 export function ProfileAvatarImage({
   customSrc,
   providerSrc,
+  fallbackSrcs = EMPTY_FALLBACK_SRCS,
   ...props
 }: ProfileAvatarImageProps) {
   const sources = useMemo(
     () =>
       Array.from(
         new Set(
-          [customSrc, providerSrc].filter(
-            (source): source is string =>
-              typeof source === "string" && source.length > 0,
-          ),
+          [customSrc, ...fallbackSrcs, providerSrc].flatMap((source) => {
+            if (typeof source !== "string") return [];
+
+            const normalizedSource = source.trim();
+            return normalizedSource ? [normalizedSource] : [];
+          }),
         ),
       ),
-    [customSrc, providerSrc],
+    [customSrc, fallbackSrcs, providerSrc],
   );
   const sourceKey = JSON.stringify(sources);
   const [failureState, setFailureState] = useState({
@@ -37,12 +43,21 @@ export function ProfileAvatarImage({
   const failedSources =
     failureState.sourceKey === sourceKey ? failureState.failedSources : [];
 
+  useEffect(() => {
+    setFailureState((currentState) =>
+      currentState.sourceKey === sourceKey
+        ? currentState
+        : { sourceKey, failedSources: [] },
+    );
+  }, [sourceKey]);
+
   const activeSource = sources.find(
     (source) => !failedSources.includes(source),
   );
 
   return (
     <AvatarImage
+      key={`${sourceKey}:${activeSource ?? "fallback"}`}
       {...props}
       src={activeSource}
       onError={() => {
