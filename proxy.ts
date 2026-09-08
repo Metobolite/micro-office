@@ -5,12 +5,11 @@ import {
   isValidTeamId,
 } from "./app/lib/team-cookie";
 import {
-  type MiddlewareConfig,
   type NextRequest,
   NextResponse,
 } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const sessionResponse = await updateSession(request);
   const legacyTeamId = request.nextUrl.searchParams.get("teamId");
 
@@ -42,8 +41,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  runtime: "nodejs",
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
-} satisfies MiddlewareConfig & { runtime: "nodejs" };
+};
