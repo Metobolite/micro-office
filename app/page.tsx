@@ -62,39 +62,16 @@ export default async function Home() {
                 </p>
               </div>
 
-              <div className="mt-8 space-y-3">
-                {workspaceFeatures.map(({ icon: Icon, title, description }) => (
-                  <div
-                    key={title}
-                    className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card/60 p-3"
-                  >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background text-foreground shadow-sm">
-                      <Icon className="size-4" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <h2 className="text-sm font-semibold">{title}</h2>
-                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                        {description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="flex items-center justify-center p-8 sm:p-10 lg:p-12">
-              <div className="w-full max-w-md">
-                <div className="mb-6 text-center lg:text-left">
-                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
-                    {loggedIn ? (
-                      <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                    ) : (
-                      <Sparkles className="size-3.5" aria-hidden="true" />
-                    )}
-                    <span>
-                      {loggedIn ? "Session active" : "Your workspace awaits"}
-                    </span>
-                  </div>
+              <Button
+                asChild
+                size="lg"
+                className="h-12 w-full justify-between rounded-xl px-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <Link href={destination}>
+                  <span>{loggedIn ? "Go to Teams" : "Sign in to continue"}</span>
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </Link>
+              </Button>
 
                   <p className="text-sm font-semibold uppercase tracking-[0.35em] text-muted-foreground">
                     {loggedIn ? "Welcome back" : "Get started"}
