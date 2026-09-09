@@ -2,7 +2,7 @@
 
 import { AvatarImage } from "@/components/ui/avatar";
 import type { ComponentProps } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const EMPTY_FALLBACK_SRCS: ReadonlyArray<string | null | undefined> = [];
 
@@ -43,13 +43,9 @@ export function ProfileAvatarImage({
   const failedSources =
     failureState.sourceKey === sourceKey ? failureState.failedSources : [];
 
-  useEffect(() => {
-    setFailureState((currentState) =>
-      currentState.sourceKey === sourceKey
-        ? currentState
-        : { sourceKey, failedSources: [] },
-    );
-  }, [sourceKey]);
+  if (failureState.sourceKey !== sourceKey) {
+    setFailureState({ sourceKey, failedSources: [] });
+  }
 
   const activeSource = sources.find(
     (source) => !failedSources.includes(source),

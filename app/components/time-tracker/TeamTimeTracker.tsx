@@ -484,6 +484,8 @@ export default function TeamTimeTracker({
 
   useEffect(() => {
     if (!activeEntry) {
+      // Reconcile the local clock when the server removes the active timer.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsedSeconds(0);
       return;
     }
@@ -510,6 +512,7 @@ export default function TeamTimeTracker({
         Math.max(0, performance.now() - tickStartedAt) / 1000,
       );
       setElapsedSeconds(baselineSeconds + locallyElapsedSeconds);
+      if (!summary) setCurrentTime(Date.now());
     };
     const intervalId = window.setInterval(updateElapsedTime, 1_000);
 
@@ -531,7 +534,7 @@ export default function TeamTimeTracker({
       document.removeEventListener("visibilitychange", refreshWhenVisible);
   }, [fetchEntries]);
 
-  const insightsClock = summary || activeEntryId ? 0 : currentTime;
+  const insightsClock = summary ? 0 : currentTime;
   const trackerInsights = useMemo(() => {
     if (summary) {
       const activeSummaryDelta =
@@ -576,11 +579,9 @@ export default function TeamTimeTracker({
       };
     }
 
-    const calculationTime = activeEntryId
-      ? Date.now()
-      : insightsClock || Date.now();
-    const todayStart = getStartOfToday().getTime();
-    const weekStart = getStartOfWeek().getTime();
+    const calculationTime = insightsClock;
+    const todayStart = getStartOfToday(new Date(calculationTime)).getTime();
+    const weekStart = getStartOfWeek(new Date(calculationTime)).getTime();
     let todaySeconds = 0;
     let weekSeconds = 0;
     let totalSeconds = 0;
@@ -594,7 +595,7 @@ export default function TeamTimeTracker({
       const duration =
         entry.id === activeEntryId
           ? elapsedSeconds
-          : getTimeEntryDuration(entry);
+          : getTimeEntryDuration(entry, calculationTime);
       const endTime = entry.end_time
         ? new Date(entry.end_time).getTime()
         : calculationTime;
@@ -658,9 +659,9 @@ export default function TeamTimeTracker({
   const filteredEntries = useMemo(() => {
     const periodStart =
       period === "today"
-        ? getStartOfToday().getTime()
+        ? getStartOfToday(new Date(entryFilterClock)).getTime()
         : period === "week"
-          ? getStartOfWeek().getTime()
+          ? getStartOfWeek(new Date(entryFilterClock)).getTime()
           : null;
     const periodEntryIds = summary
       ? new Set(
@@ -679,7 +680,7 @@ export default function TeamTimeTracker({
           ? periodEntryIds.has(entry.id)
           : (entry.end_time
                 ? new Date(entry.end_time).getTime()
-                : entryFilterClock || Date.now()) > periodStart);
+                : entryFilterClock) > periodStart);
       const matchesTask =
         taskFilter === "all" ||
         (taskFilter === "general"

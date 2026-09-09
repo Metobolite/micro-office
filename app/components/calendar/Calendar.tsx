@@ -177,6 +177,8 @@ export default function Calendar({
       localMonthKey === `${initialYear}-${initialMonth}` ? localMonthKey : "";
     shouldRefreshInitialAgendaRef.current =
       localTodayDate !== initialTodayDate;
+    // The server date must be replaced with the browser's timezone after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentDate(new Date(localNow.getFullYear(), localNow.getMonth(), 1));
     setTodayDate(localTodayDate);
     setIsClientDateReady(true);

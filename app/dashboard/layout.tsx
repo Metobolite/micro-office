@@ -1,5 +1,6 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/app/components/sidebar";
+import { SiteFooter } from "@/app/components/site-footer";
 import { DashboardHeader } from "@/app/components/dashboard/dashboard-header";
 import { getProfileAvatarSources } from "@/app/lib/profile-avatar";
 import { redirect } from "next/navigation";
@@ -82,6 +83,7 @@ export default async function DashboardLayout({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {children}
           </div>
+          <SiteFooter className="bg-accent" />
         </main>
       </div>
     </SidebarProvider>

@@ -111,7 +111,6 @@ export function DocumentSummariesPage({
   const [nextCursor, setNextCursor] =
     useState<FilePageCursor | null>(initialNextCursor);
   const [loadFailed, setLoadFailed] = useState(initialLoadFailed);
-  const [showAiSetupNotice, setShowAiSetupNotice] = useState(false);
 
   const hasActiveSearch = searchTerm.trim().length > 0;
 
@@ -415,7 +414,6 @@ export function DocumentSummariesPage({
 
       if (newestDocument) {
         setSelectedDocumentId(newestDocument.id);
-        setShowAiSetupNotice(false);
       }
 
       if (uploadedPaths.length === validFiles.length && invalidFiles.length === 0) {
@@ -479,11 +477,6 @@ export function DocumentSummariesPage({
     link.remove();
     toast.success("Download started.", { id: toastId });
   }, []);
-
-  const handleGenerateSummary = () => {
-    setShowAiSetupNotice(true);
-    toast.info("AI summaries are ready for the API connection.");
-  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -649,7 +642,6 @@ export function DocumentSummariesPage({
                           )}
                           onClick={() => {
                             setSelectedDocumentId(document.id);
-                            setShowAiSetupNotice(false);
                           }}
                         >
                           <DocumentTypeIcon document={document} />
@@ -741,7 +733,7 @@ export function DocumentSummariesPage({
                           </p>
                         </div>
                         <Badge variant="outline" className="font-normal">
-                          Setup pending
+                          Coming soon
                         </Badge>
                       </div>
                     </div>
@@ -750,19 +742,16 @@ export function DocumentSummariesPage({
                         <LockKeyhole className="size-5" />
                       </span>
                       <h3 className="mt-4 font-medium">
-                        {showAiSetupNotice
-                          ? "OpenAI connection required"
-                          : "Ready for AI summaries"}
+                        Summaries are not available yet
                       </h3>
                       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                        {showAiSetupNotice
-                          ? "The document workspace is complete. Add the server API key later to enable summary generation."
-                          : "The AI action is prepared but does not send this document anywhere while no API key is configured."}
+                        You can preview and download your documents here.
+                        Summary generation will be available in a future update.
                       </p>
                       <Button
                         type="button"
                         className="mt-5"
-                        onClick={handleGenerateSummary}
+                        disabled
                       >
                         <Sparkles className="size-4" />
                         Generate summary

@@ -12,7 +12,7 @@ export default async function NewTeamPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
+    <main className="relative flex-1 bg-background text-foreground">
       <ThemeToggle className="absolute right-6 top-6" />
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
         <CreateTeamForm
@@ -29,6 +29,6 @@ export default async function NewTeamPage() {
           )}
         />
       </div>
-    </div>
+    </main>
   );
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { resolveAppUrl } from "@/lib/deployment-env.mjs";
 
 import type {
   SendEmailResult,
@@ -21,12 +22,14 @@ function getSenderEmail() {
 }
 
 export function getAppUrl() {
-  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
-  const vercelUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : null;
+  return resolveAppUrl(process.env);
+}
 
-  return (appUrl || vercelUrl || "http://localhost:3000").replace(/\/$/, "");
+export function isInvitationEmailConfigured() {
+  return Boolean(
+    process.env.RESEND_API_KEY?.trim() &&
+      (process.env.NODE_ENV !== "production" || process.env.RESEND_FROM_EMAIL?.trim()),
+  );
 }
 
 export async function sendTeamInvitationEmail({

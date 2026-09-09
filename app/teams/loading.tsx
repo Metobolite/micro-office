@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function TeamsLoading() {
   return (
     <div
-      className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8"
+      className="flex-1 bg-background px-4 py-10 sm:px-6 lg:px-8"
       aria-label="Loading teams"
       aria-busy="true"
     >
