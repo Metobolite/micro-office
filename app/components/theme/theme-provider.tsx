@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 import type {
   Theme,
@@ -15,6 +14,7 @@ import type {
 } from "@/app/types/theme";
 
 const THEME_STORAGE_KEY = "micro-office-theme";
+const THEME_CHANGE_EVENT = "micro-office-theme-change";
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -33,10 +33,11 @@ function getStoredTheme(): Theme {
     return "light";
   }
 
-  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-
-  if (storedTheme === "light" || storedTheme === "dark") {
-    return storedTheme;
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === "light" || storedTheme === "dark") return storedTheme;
+  } catch {
+    // Browser privacy settings can make localStorage unavailable.
   }
 
   return getSystemTheme();
@@ -49,20 +50,46 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = theme;
 }
 
+function subscribeToTheme(onChange: () => void) {
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const syncTheme = () => {
+    applyTheme(getStoredTheme());
+    onChange();
+  };
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === THEME_STORAGE_KEY) syncTheme();
+  };
+
+  syncTheme();
+  media.addEventListener("change", syncTheme);
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(THEME_CHANGE_EVENT, onChange);
+  return () => {
+    media.removeEventListener("change", syncTheme);
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(THEME_CHANGE_EVENT, onChange);
+  };
+}
+
+const getThemeSnapshot = (): Theme =>
+  document.documentElement.classList.contains("dark") ? "dark" : "light";
+const getServerTheme = (): Theme => "light";
+
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>("light");
-
-  useEffect(() => {
-    const initialTheme = getStoredTheme();
-
-    setThemeState(initialTheme);
-    applyTheme(initialTheme);
-  }, []);
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerTheme,
+  );
 
   const setTheme = useCallback((nextTheme: Theme) => {
-    setThemeState(nextTheme);
-    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    } catch {
+      // Keep the toggle usable even when the preference cannot be persisted.
+    }
     applyTheme(nextTheme);
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
   }, []);
 
   const toggleTheme = useCallback(() => {

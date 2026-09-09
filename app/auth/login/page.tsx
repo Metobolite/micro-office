@@ -22,11 +22,11 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_45%)]" />
+    <main className="relative flex flex-1 flex-col overflow-hidden bg-background px-4 py-16 text-foreground sm:px-6 lg:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.08),transparent_45%)]" aria-hidden="true" />
       <ThemeToggle className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6" />
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center justify-center">
+      <div className="relative mx-auto flex w-full max-w-5xl flex-1 items-center justify-center">
         <div className="grid w-full overflow-hidden rounded-[1.75rem] border border-border/70 bg-card/95 shadow-xl shadow-black/5 backdrop-blur-xl lg:grid-cols-[0.8fr_1.2fr]">
           <div className="flex flex-col justify-center border-b border-border/70 bg-background/70 p-8 sm:p-10 lg:border-b-0 lg:border-r lg:p-10">
             <p className="text-sm font-medium uppercase tracking-[0.3em] text-muted-foreground">
@@ -64,12 +64,12 @@ export default async function LoginPage({
               <LoginButton redirectPath={nextPath} />
 
               <p className="mt-6 text-center text-xs leading-6 text-muted-foreground">
-                By signing in, you agree to our terms of use.
+                Sign in with the account you use for your team invitations.
               </p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

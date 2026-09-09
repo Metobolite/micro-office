@@ -85,7 +85,7 @@ export function TeamPresenceProvider({
   const desiredStatusRef = useRef<Exclude<TeamPresenceStatus, "offline">>(
     "online",
   );
-  const lastActivityAtRef = useRef(Date.now());
+  const lastActivityAtRef = useRef(0);
   const lastPublishedAtRef = useRef(0);
   const lastPublishedStatusRef = useRef<Exclude<
     TeamPresenceStatus,
@@ -255,6 +255,8 @@ export function TeamPresenceProvider({
     clearPendingPublish();
     lastPublishedAtRef.current = 0;
     lastPublishedStatusRef.current = null;
+    // A new channel must start unsynced until its first Presence snapshot arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSyncedTeamId(null);
     setSnapshot({
       teamId: activeTeamId,

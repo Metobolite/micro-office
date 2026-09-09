@@ -1,41 +1,61 @@
 # Micro Office
 
-Micro Office is a Next.js workspace for team tasks, chat, files, document
-summaries, calendars, presence, settings, and time tracking. Authentication,
-database access, storage, and realtime features use Supabase.
+A Next.js workspace for team tasks, chat, files, document previews, calendars,
+presence, settings, and time tracking. Supabase provides authentication,
+database access, storage, and realtime features. AI summaries are not yet
+connected to a backend.
 
 ## Local development
 
-Requirements:
+Use Node.js 24 (see `.nvmrc`) and npm. The package supports Node.js 22 or newer.
+You also need an existing Supabase project with the application schema and RPCs.
+The migrations in this repository do not create a complete database from scratch.
 
-- Node.js 22 or newer
-- A Supabase project with the application schema installed
+1. Copy `.env.example` to `.env.local` and fill in your Supabase public URL/key.
+2. Install the locked dependencies with `npm ci`.
+3. Run `npm run dev` and open [localhost:3000](http://localhost:3000).
 
-Create `.env.local` with:
+For invitation email delivery, configure both `RESEND_API_KEY` and
+`RESEND_FROM_EMAIL`. Set `APP_URL` to the origin recipients should open.
+See [the deployment guide](docs/DEPLOYMENT.md) for production configuration.
 
-```dotenv
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-
-# Optional invitation email configuration
-RESEND_API_KEY=
-RESEND_FROM_EMAIL=
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-Install dependencies and start the development server:
+## Verification
 
 ```bash
-npm install
-npm run dev
+npm run check
 ```
 
-The app is available at [http://localhost:3000](http://localhost:3000).
+This runs lint (including warnings), generates route types and checks TypeScript,
+runs the configuration regression tests, validates production environment
+variables, and creates a production build. `npm run build` also runs the
+environment check automatically.
 
-## Checks
+Individual commands:
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run typecheck
+npm test
+npm run check:env
 npm run build
+npm audit
+npm start
 ```
+
+GitHub Actions runs these quality checks using build-only placeholder credentials.
+A passing CI build does not verify the live Supabase schema, OAuth, or emails.
+Google Fonts must be reachable during the build to download Manrope; Next.js
+serves the resulting font files with the application.
+
+## Deployment status
+
+The code includes copyright footers, recovery/404 pages, private-route metadata,
+security headers, and environment validation. Follow the outstanding database,
+OAuth, storage, and acceptance checks in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+before publishing a production deployment.
+
+## Copyright
+
+Copyright (c) 2026 Micro Office. All rights reserved.
+
+Third-party dependencies retain their respective licenses.

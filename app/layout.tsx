@@ -10,7 +10,11 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Micro Office",
+  title: {
+    default: "Micro Office",
+    template: "%s | Micro Office",
+  },
+  applicationName: "Micro Office",
   description: "Manage your team's work in one place.",
 };
 

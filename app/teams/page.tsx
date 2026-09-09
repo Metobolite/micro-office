@@ -62,7 +62,7 @@ export default async function TeamsPage() {
     .filter((item): item is TeamListItem => item !== null);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <main className="flex-1 bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-6 rounded-3xl border bg-card p-6 text-card-foreground shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -193,6 +193,6 @@ export default async function TeamsPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -86,6 +86,8 @@ export default async function InvitePage({
   const normalizedUserEmail = user.email?.trim().toLowerCase();
   const normalizedInvitationEmail = invitation?.email?.trim().toLowerCase();
   const isInvitationExpired = invitation
+    // This async Server Component checks expiry against the request-time clock.
+    // eslint-disable-next-line react-hooks/purity
     ? new Date(invitation.expires_at).getTime() <= Date.now()
     : false;
   const canAccept =
@@ -96,7 +98,7 @@ export default async function InvitePage({
   const acceptInvitationWithToken = acceptInvitation.bind(null, token);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
+    <main className="relative flex flex-1 items-center justify-center bg-background px-4 py-20 text-foreground">
       <ThemeToggle className="absolute right-6 top-6" />
       <Card className="w-full max-w-md">
         <CardHeader>
@@ -153,6 +155,6 @@ export default async function InvitePage({
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }

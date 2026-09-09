@@ -1,6 +1,6 @@
 "use server";
 
-import { getAppUrl, sendTeamInvitationEmail } from "@/app/lib/email";
+import { getAppUrl, isInvitationEmailConfigured, sendTeamInvitationEmail } from "@/app/lib/email";
 import {
   createInvitationToken,
   getInvitationExpiresAt,
@@ -133,6 +133,19 @@ export async function sendInvitation(
     };
   }
 
+  // Check delivery configuration before creating an invitation that would
+  // otherwise block future invitations to this address without sending mail.
+  let appUrl: string;
+  try {
+    if (!isInvitationEmailConfigured()) throw new Error("Email is not configured.");
+    appUrl = getAppUrl();
+  } catch {
+    return {
+      success: false,
+      message: "Invitation emails are currently unavailable. Please contact the workspace administrator.",
+    };
+  }
+
   const token = createInvitationToken();
   const { error: insertError } = await supabase.from("team_invitations").insert({
     team_id: normalizedTeamId,
@@ -165,7 +178,7 @@ export async function sendInvitation(
     to: normalizedEmail,
     teamName,
     inviterName,
-    inviteUrl: `${getAppUrl()}/invite/${token}`,
+    inviteUrl: `${appUrl}/invite/${token}`,
     role,
   });
 

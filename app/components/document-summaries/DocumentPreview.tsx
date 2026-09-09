@@ -226,6 +226,8 @@ export function DocumentPreview({
     let disposed = false;
     const abortController = new AbortController();
 
+    // Clear the previous external preview while the new Storage request loads.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPdfUrl(null);
     setDocxFrameSource(null);
     setErrorMessage(null);
@@ -376,8 +378,7 @@ export function DocumentPreview({
             <h3 className="mt-4 font-medium">Legacy Word preview</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Older .doc files cannot be rendered safely in the browser. You can
-              still download the file, and AI summaries can support it once the
-              server integration is connected.
+              still download it, or upload a .docx copy for a browser preview.
             </p>
             <Button
               type="button"
