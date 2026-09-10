@@ -117,7 +117,7 @@ export async function updateProfileSettings(
   });
 
   if (authError) {
-    console.error("Profile auth update error:", authError);
+    console.error("Profile auth update failed:", authError.code);
     return {
       success: false,
       message: "Profile could not be updated. Please try again.",
@@ -127,7 +127,7 @@ export async function updateProfileSettings(
   const { error: rpcError } = await supabase.rpc("sync_own_profile_settings");
 
   if (rpcError) {
-    console.error("Profile membership sync error:", rpcError);
+    console.error("Profile membership sync failed:", rpcError.code);
   }
 
   revalidatePath("/dashboard", "layout");
@@ -183,7 +183,7 @@ export async function updateWorkspaceSettings(
     .maybeSingle();
 
   if (membershipError) {
-    console.error("Workspace permission check error:", membershipError);
+    console.error("Workspace permission check failed:", membershipError.code);
     return {
       success: false,
       message: "Workspace permissions could not be verified. Please try again.",
@@ -206,7 +206,7 @@ export async function updateWorkspaceSettings(
   );
 
   if (rpcError) {
-    console.error("Workspace settings update error:", rpcError);
+    console.error("Workspace settings update failed:", rpcError.code);
     return {
       success: false,
       message: "Workspace could not be updated. Please try again.",

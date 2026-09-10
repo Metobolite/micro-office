@@ -260,61 +260,19 @@ export default function TasksPageClient({
     setIsReordering(true);
 
     try {
-      const updateResults = await Promise.all(
-        changedTasks.map((task) =>
-          supabase
-            .from("tasks")
-            .update({ status: task.status, sort_order: task.sort_order })
-            .eq("id", task.id)
-            .eq("user_id", userId)
-            .eq("team_id", teamId),
-        ),
-      );
-      const failedUpdate = updateResults.find((result) => result.error);
-
-      if (!failedUpdate?.error) return;
-
-      const successfullyUpdatedTasks = changedTasks.filter(
-        (_, index) => !updateResults[index].error,
-      );
-      const rollbackResults = await Promise.all(
-        successfullyUpdatedTasks.map(async (task) => {
-          const previousTask = previousTasksById.get(task.id);
-          if (!previousTask) return { error: null };
-
-          return supabase
-            .from("tasks")
-            .update({
-              status: previousTask.status,
-              sort_order: previousTask.sort_order,
-            })
-            .eq("id", task.id)
-            .eq("user_id", userId)
-            .eq("team_id", teamId);
-        }),
-      );
-      const rollbackFailed = rollbackResults.some((result) => result.error);
-
-      const { data: refreshedTasks, error: refreshError } = await supabase
-        .from("tasks")
-        .select("id, title, description, status, priority, sort_order, due_date")
-        .eq("user_id", userId)
-        .eq("team_id", teamId)
-        .order("status", { ascending: true })
-        .order("sort_order", { ascending: true });
-
-      setTasks(
-        !refreshError && refreshedTasks
-          ? (refreshedTasks as Task[])
-          : previousTasks,
-      );
-      toast.error("Task order could not be saved.", {
-        description:
-          rollbackFailed || refreshError
-            ? "The board could not be fully resynced. Please refresh the page before reordering again."
-            : failedUpdate.error.message,
+      const { error } = await supabase.rpc("reorder_own_tasks", {
+        target_team_id: teamId,
+        task_changes: changedTasks.map(({ id, status, sort_order }) => ({
+          id,
+          status,
+          sort_order,
+        })),
       });
-    } catch (error) {
+
+      if (error) throw error;
+    } catch {
+      // The transaction cannot partially commit. A failed network response can
+      // still hide a successful commit, so reconcile once with the server.
       const { data: refreshedTasks, error: refreshError } = await supabase
         .from("tasks")
         .select("id, title, description, status, priority, sort_order, due_date")
@@ -331,9 +289,7 @@ export default function TasksPageClient({
       toast.error("Task order could not be saved.", {
         description: refreshError
           ? "The board could not be resynced. Please refresh the page before reordering again."
-          : error instanceof Error
-            ? error.message
-            : "Please refresh the page and try again.",
+          : "Please try again.",
       });
     } finally {
       isReorderingRef.current = false;

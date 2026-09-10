@@ -36,11 +36,18 @@ Individual commands:
 npm run lint
 npm run typecheck
 npm test
+npm run test:db
 npm run check:env
 npm run build
 npm audit
 npm start
 ```
+
+`test:db` requires local PostgreSQL binaries (including `pg_trgm`). Set `PG_BIN`
+to the PostgreSQL `bin` directory if `pg_config` is not on PATH. The test runner
+always creates and removes a disposable cluster containing synthetic data; it
+never accepts a live database URL. See the [security and performance audit](docs/AUDIT-2026-09-10.md)
+for results, migration prerequisites, limitations, and optional browser checks.
 
 GitHub Actions runs these quality checks using build-only placeholder credentials.
 A passing CI build does not verify the live Supabase schema, OAuth, or emails.

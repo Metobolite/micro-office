@@ -32,3 +32,9 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm audit --audit-level=high
+      - name: Test SQL authorization in a disposable PostgreSQL cluster
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib libpq-dev
+          export PG_BIN="$(pg_config --bindir)"
+          npm run test:db

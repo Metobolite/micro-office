@@ -62,7 +62,7 @@ export async function sendInvitation(
     .maybeSingle();
 
   if (membershipError) {
-    console.error("Invitation permission check error:", membershipError);
+    console.error("Invitation permission check failed:", membershipError.code);
     return {
       success: false,
       message: "Your invitation permissions could not be verified.",
@@ -93,7 +93,7 @@ export async function sendInvitation(
       .from("team_members")
       .select("team_id")
       .eq("team_id", normalizedTeamId)
-      .ilike("email", normalizedEmail)
+      .ilike("email", normalizedEmail.replace(/[\\%_]/g, "\\$&"))
       .maybeSingle(),
     supabase
       .from("team_invitations")
@@ -108,7 +108,7 @@ export async function sendInvitation(
     teamResult.error || memberResult.error || invitationResult.error;
 
   if (lookupError) {
-    console.error("Invitation lookup error:", lookupError);
+    console.error("Invitation lookup failed:", lookupError.code);
     return {
       success: false,
       message: "Invitation information could not be verified.",
@@ -157,12 +157,14 @@ export async function sendInvitation(
   });
 
   if (insertError) {
-    console.error("Team invitation insert error:", insertError);
+    console.error("Team invitation insert failed:", insertError.code);
 
     return {
       success: false,
       message:
-        insertError.code === "23505"
+        insertError.code === "P0001" && insertError.message === "Invitation rate limit reached."
+          ? "Too many invitations have been sent. Please try again next hour."
+          : insertError.code === "23505"
           ? "This email address has already been invited to this team."
           : "Invitation could not be sent. Please try again.",
     };

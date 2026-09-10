@@ -80,16 +80,26 @@ Existing migrations, in timestamp order:
 1. `20260816120000_security_hardening.sql`: membership checks and RLS guards.
 2. `20260816121000_performance_indexes.sql`: indexes and invitation uniqueness.
 3. `20260820160000_sync_profile_across_teams.sql`: profile synchronization RPC.
+4. `20260910120000_invitation_boundaries.sql`: persistent invitation quotas and
+   verified, transactional acceptance; revokes the legacy acceptance RPC.
+5. `20260910121000_atomic_task_reordering.sql`: bounded, atomic own-task reorder RPC.
+6. `20260910122000_storage_policies.sql`: owner/team Storage policies and guards
+   against legacy broad grants; requires existing buckets.
 
 These migrations require the base tables to exist. They do not install the
 application schema on an empty project. Before applying pending migrations,
 compare the project's migration history, take a backup, and validate in staging.
+The updated application calls `accept_team_invitation_secure` and
+`reorder_own_tasks`; deploy the reviewed migrations with the matching application
+release. Old application instances still call the legacy acceptance RPC, whose
+grants are revoked by migration 4. Coordinate this transition. Do not deploy the
+new application by itself. Review compatibility and rollback steps in the
+[audit report](AUDIT-2026-09-10.md).
 The index migration assumes small tables and uses bounded lock timeouts; read
 the migration comments first.
 
 RPC definitions called by the application but missing from this repository:
 
-- `accept_team_invitation_with_role`
 - `update_team_name_settings`
 - `can_access_team_presence`
 - `get_time_entry_summary`
@@ -114,8 +124,12 @@ migration.
 - Presence uses private `team:<team-id>:presence` channels. Verify both
   `can_access_team_presence` and Realtime authorization reject nonmembers.
 
-The migrations do not provision Storage policies or Realtime configuration.
-Export and version their reviewed setup before a reproducible release.
+Migration 6 now supplies Storage policies, but does not create buckets, set their
+size/MIME limits, or provision Realtime authorization. Configure `user-files` as
+private with a maximum of 100 MiB (or a lower provider-supported limit), and
+`avatars` as public with a 5 MiB maximum and only JPEG/PNG/WebP MIME types.
+Existing public `user-files` buckets fail the migration preflight rather than
+silently exposing objects. Export and verify the live setup before release.
 
 ## OAuth and email
 

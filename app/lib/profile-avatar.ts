@@ -35,22 +35,20 @@ export function getOwnedAvatarStoragePath(
 
   try {
     const url = new URL(normalizedAvatarUrl);
-    if (!SUPABASE_ORIGIN || url.origin !== SUPABASE_ORIGIN) return null;
+    if (!SUPABASE_ORIGIN || url.origin !== SUPABASE_ORIGIN || url.username || url.password) return null;
 
     const pathname = url.pathname;
-    const markerIndex = pathname.indexOf(PUBLIC_AVATAR_PATH);
-
-    if (markerIndex === -1) return null;
+    if (!pathname.startsWith(PUBLIC_AVATAR_PATH)) return null;
 
     const storagePath = decodeURIComponent(
-      pathname.slice(markerIndex + PUBLIC_AVATAR_PATH.length),
+      pathname.slice(PUBLIC_AVATAR_PATH.length),
     );
     const pathParts = storagePath.split("/");
 
     return pathParts.length === 3 &&
       pathParts[0] === userId &&
       pathParts[1] === "avatars" &&
-      pathParts[2]
+      /^[a-zA-Z0-9_.-]+\.(?:jpg|jpeg|png|webp)$/i.test(pathParts[2])
       ? storagePath
       : null;
   } catch {

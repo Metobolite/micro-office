@@ -54,12 +54,12 @@ export async function acceptInvitation(token: unknown) {
   }
 
   const { data: acceptedTeamId, error: acceptError } = await supabase.rpc(
-    "accept_team_invitation_with_role",
+    "accept_team_invitation_secure",
     { invitation_token_hash: tokenHash },
   );
 
   if (acceptError || !acceptedTeamId) {
-    console.error("Accept invitation RPC error:", acceptError);
+    console.error("Accept invitation RPC failed:", acceptError?.code);
     redirect(`/invite/${token}?error=accept`);
   }
 
@@ -68,7 +68,7 @@ export async function acceptInvitation(token: unknown) {
   );
 
   if (profileSyncError) {
-    console.error("Accepted membership profile sync error:", profileSyncError);
+    console.error("Accepted membership profile sync failed:", profileSyncError.code);
   }
 
   await setStoredActiveTeamId(String(acceptedTeamId));

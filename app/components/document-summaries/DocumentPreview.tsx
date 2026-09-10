@@ -1,6 +1,7 @@
 "use client";
 
 import { MAX_SUMMARY_DOCUMENT_BYTES } from "@/app/lib/document-summaries";
+import { preflightDocx } from "@/app/lib/docx-preflight";
 import { supabase } from "@/app/lib/supabase";
 import type { SummaryDocument } from "@/app/types/document-summary";
 import { Button } from "@/components/ui/button";
@@ -239,11 +240,6 @@ export function DocumentPreview({
 
     setStatus("loading");
 
-    const docxPreviewModule =
-      selectedDocument.extension === "docx"
-        ? import("docx-preview")
-        : null;
-
     const loadPreview = async () => {
       try {
         if (selectedDocument.extension === "pdf") {
@@ -262,7 +258,7 @@ export function DocumentPreview({
           return;
         }
 
-        if (disposed || !docxPreviewModule) return;
+        if (disposed || selectedDocument.extension !== "docx") return;
 
         const { data: fileInfo, error: fileInfoError } = await supabase.storage
           .from("user-files")
@@ -286,10 +282,12 @@ export function DocumentPreview({
           throw new Error("This document is too large to preview in the browser.");
         }
 
-        const [{ renderAsync }, arrayBuffer] = await Promise.all([
-          docxPreviewModule,
-          data.arrayBuffer(),
-        ]);
+        const arrayBuffer = await preflightDocx(
+          await data.arrayBuffer(),
+          abortController.signal,
+        );
+        if (disposed) return;
+        const { renderAsync } = await import("docx-preview");
 
         if (disposed) return;
 
